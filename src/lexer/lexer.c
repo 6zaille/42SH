@@ -34,22 +34,6 @@ static void skip_whitespace(struct lexer *lexer)
         lexer->pos++;
 }
 
-static struct token *read_word(struct lexer *lexer)
-{
-    size_t start = lexer->pos;
-    while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != ' ' &&
-           lexer->input[lexer->pos] != '\t' && lexer->input[lexer->pos] != '\n' &&
-           lexer->input[lexer->pos] != ';')
-    {
-        lexer->pos++;
-    }
-    size_t length = lexer->pos - start;
-    char *word = strndup(&lexer->input[start], length);
-    if (!word)
-        return NULL;
-    return create_token(TOKEN_WORD, word);
-}
-
 struct lexer *lexer_init(const char *input)
 {
     struct lexer *lexer = malloc(sizeof(struct lexer));
@@ -73,39 +57,54 @@ struct token *lexer_next_token(struct lexer *lexer)
     if (lexer->input[lexer->pos] == '\0')
         return create_token(TOKEN_EOF, NULL);
 
-    char current = lexer->input[lexer->pos];
-    lexer->pos++;
+    const char *start = &lexer->input[lexer->pos];
 
-    switch (current)
+    if (strncmp(start, "if", 2) == 0 && !isalnum(start[2]))
     {
-    case ';':
+        lexer->pos += 2;
+        return create_token(TOKEN_IF, "if");
+    }
+    if (strncmp(start, "then", 4) == 0 && !isalnum(start[4]))
+    {
+        lexer->pos += 4;
+        return create_token(TOKEN_THEN, "then");
+    }
+    if (strncmp(start, "else", 4) == 0 && !isalnum(start[4]))
+    {
+        lexer->pos += 4;
+        return create_token(TOKEN_ELSE, "else");
+    }
+    if (strncmp(start, "elif", 4) == 0 && !isalnum(start[4]))
+    {
+        lexer->pos += 4;
+        return create_token(TOKEN_ELIF, "elif");
+    }
+    if (strncmp(start, "fi", 2) == 0 && !isalnum(start[2]))
+    {
+        lexer->pos += 2;
+        return create_token(TOKEN_FI, "fi");
+    }
+
+    if (lexer->input[lexer->pos] == ';')
+    {
+        lexer->pos++;
         return create_token(TOKEN_SEMICOLON, ";");
-    case '\n':
-        return create_token(TOKEN_NEWLINE, "\\n");
-    case '\'':
+    }
+
+    if (lexer->input[lexer->pos] == '\n')
     {
-        size_t start = lexer->pos;
-        while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\'')
-            lexer->pos++;
-
-        if (lexer->input[lexer->pos] == '\'')
-        {
-            size_t length = lexer->pos - start;
-            char *quoted_content = strndup(&lexer->input[start], length);
-            lexer->pos++; // Skip closing quote
-            return create_token(TOKEN_WORD, quoted_content);
-        }
-        else
-        {
-            // Unterminated single quote
-            return create_token(TOKEN_ERROR, "Unterminated single quote");
-        }
-    }
+        lexer->pos++;
+        return create_token(TOKEN_NEWLINE, "\\n");
     }
 
-    // Default case: Read a word
-    lexer->pos--;
-    return read_word(lexer);
+    size_t start_pos = lexer->pos;
+    while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos]) &&
+           lexer->input[lexer->pos] != ';' && lexer->input[lexer->pos] != '\n')
+    {
+        lexer->pos++;
+    }
+    size_t length = lexer->pos - start_pos;
+    return create_token(TOKEN_WORD, strndup(&lexer->input[start_pos], length));
 }
 
 void token_free(struct token *tok)
