@@ -1,14 +1,21 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../parser/ast.h"
+#include "ast.h"
 
-int execute_ast(ast_node_t *root) {
+int execute_ast(struct ast *root) {
     if (!root) {
         return -1;
     }
-    if (root->type == COMMAND_NODE) {
-        return execute_command(root->command);
+    if (root->type == AST_NUMBER) {
+        printf("Executing AST node with value: %zd\n", root->value);
+        return 0;
+    }
+    if (root->type == AST_PLUS || root->type == AST_MINUS ||
+        root->type == AST_MUL || root->type == AST_DIV) {
+        int left_status = execute_ast(root->left);
+        int right_status = execute_ast(root->right);
+        return left_status || right_status;
     }
     return 0;
 }
