@@ -1,7 +1,13 @@
-#include <stdio.h>
+#include "utils.h"
 
-int main(void)
-{
-    printf("oui ca marche");
-    return 1;    
+int verbose_mode = 0;
+
+void set_verbose_mode(int enabled) {
+    verbose_mode = enabled;
+}
+
+void verbose_log(const char *message) {
+    if (verbose_mode) {
+        fprintf(stderr, "[VERBOSE]: %s\n", message);
+    }
 }

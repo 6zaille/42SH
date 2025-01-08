@@ -7,4 +7,4 @@
 int execute_ast(ast_node_t *root);
 int execute_command(char **command);
 
-#endif // EXEC_H
+#endif /* !EXEC_H */

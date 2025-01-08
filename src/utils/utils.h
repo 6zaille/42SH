@@ -8,4 +8,9 @@
 void *xmalloc(size_t size);
 char *xstrdup(const char *str);
 
-#endif // UTILS_H
+void set_verbose_mode(int enabled);
+void verbose_log(const char *message);
+
+
+#endif /* !UTILS_H */
+
