@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../parser/ast.h"
 
 int execute_ast(ast_node_t *root) {
     if (!root) {
