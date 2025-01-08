@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Fonctions utilitaires
 void *xmalloc(size_t size);
 char *xstrdup(const char *str);
 

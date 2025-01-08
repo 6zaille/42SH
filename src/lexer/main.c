@@ -44,7 +44,7 @@ int main(int argc, char **argv)
         token_free(tok);
     }
 
-    print_token(tok); // Print EOF token
+    print_token(tok);
     token_free(tok);
     lexer_destroy(lexer);
 

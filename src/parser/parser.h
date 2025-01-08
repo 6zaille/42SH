@@ -1,9 +1,9 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "../lexer/token.h" // Inclut token.h depuis lexer
+#include "../lexer/token.h"
 #include "ast.h"
-#include "../lexer/lexer.h" // Inclut lexer.h depuis lexer
+#include "../lexer/lexer.h"
 
 enum parser_status
 {

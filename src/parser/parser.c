@@ -24,7 +24,7 @@ struct ast *parse_command(struct lexer *lexer, enum parser_status *status)
     if (current_token->type == TOKEN_WORD)
     {
         struct ast *node = ast_new(AST_NUMBER);
-        node->value = 0; // Placeholder value
+        node->value = 0;
         consume_token(lexer);
         return node;
     }
@@ -91,7 +91,7 @@ struct ast *parse_if(struct lexer *lexer, enum parser_status *status)
         return NULL;
     }
 
-    struct ast *if_node = ast_new(AST_NUMBER); // Placeholder type
+    struct ast *if_node = ast_new(AST_NUMBER);
     if_node->left = condition;
     if_node->right = then_branch;
 
