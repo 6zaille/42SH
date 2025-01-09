@@ -16,14 +16,14 @@ static struct token *consume_token(struct lexer *lexer)
     return tok;
 }
 
-static void expect_token(struct token *tok, enum token_type type, enum parser_status *status)
+/*static void expect_token(struct token *tok, enum token_type type, enum parser_status *status)
 {
     if (!tok || tok->type != type)
     {
         *status = PARSER_ERROR;
     }
 }
-
+*/
 static struct ast *parse_simple_command(struct lexer *lexer, enum parser_status *status)
 {
     struct ast *command_node = ast_new();

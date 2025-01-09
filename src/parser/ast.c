@@ -82,7 +82,10 @@ void __eval_ast(struct ast *root)
             save++;
         }
         int res = execute_command(taille, args);
-
+        if (res == 1000000)
+        {
+            fprintf(stderr, "Erreur : commande inconnue\n");
+        }
         // Free the arguments array
         free(args);
     }

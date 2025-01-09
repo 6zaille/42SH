@@ -49,6 +49,7 @@ static int is_surrounded_by_letters(struct lexer *lexer, size_t pos) {
     return isalnum(prev) && isalnum(next);
 }
 
+/*
 static struct token *handle_single_quote(struct lexer *lexer) {
     size_t start = ++lexer->pos; // Skip opening single quote
     while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\'') {
@@ -64,7 +65,7 @@ static struct token *handle_single_quote(struct lexer *lexer) {
     lexer->pos++; // Skip closing single quote
     return create_token(TOKEN_WORD, value);
 }
-
+*/
 struct lexer *lexer_init(const char *input) {
     struct lexer *lexer = malloc(sizeof(struct lexer));
     if (!lexer) {
