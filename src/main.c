@@ -5,46 +5,10 @@
 #include "parser/ast.h"
 #include "parser/parser.h"
 #include "execution/exec.h"
+#include "execution/builtins.h"
+#include "lexer/lexer.h"
 
-int handle_c_option(char *command) {
-    if (!command || strlen(command) == 0) {
-        fprintf(stderr, "42sh: option -c requires a non-empty command\n");
-        return 2;
-    }
-
-    verbose_log("Parsing command...");
-    struct ast *ast = parse_input_from_string(command);
-    if (!ast) {
-        fprintf(stderr, "42sh: syntax error in command: %s\n", command);
-        return 2;
-    }
-
-    verbose_log("Executing command...");
-    int status = execute_ast(ast);
-    ast_free(ast);
-    return status;
-}
-
-int handle_options(int argc, char **argv, char **command, int *pretty_print) {
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-c") == 0) {
-            if (i + 1 < argc) {
-                *command = argv[++i];
-            } else {
-                fprintf(stderr, "42sh: missing argument after -c\n");
-                return 2;
-            }
-        } else if (strcmp(argv[i], "--verbose") == 0) {
-            set_verbose_mode(1);
-        } else if (strcmp(argv[i], "--pretty-print") == 0) {
-            *pretty_print = 1;
-        } else {
-            fprintf(stderr, "42sh: unrecognized option '%s'\n", argv[i]);
-            return 2;
-        }
-    }
-    return 0;
-}
+void interactive_mode();
 
 int main(int argc, char **argv) {
     int pretty_print = 0;
@@ -56,9 +20,60 @@ int main(int argc, char **argv) {
     }
 
     if (command) {
-        return handle_c_option(command);
+        struct lexer *lexer = lexer_init(command);
+        if (!lexer) {
+            fprintf(stderr, "Failed to initialize lexer\n");
+            return 2;
+        }
+
+        enum parser_status status;
+        struct ast *ast = parser_parse(lexer, &status);
+        lexer_destroy(lexer);
+
+        if (status != PARSER_OK) {
+            fprintf(stderr, "Syntax error\n");
+            return 2;
+        }
+
+        if (pretty_print) {
+            print_arbre(ast);
+        } else {
+            eval_ast(ast);
+        }
+
+        ast_free(ast);
+        return 0;
     }
 
-    printf("Starting interactive mode...\n");
+    interactive_mode();
     return 0;
+}
+
+void interactive_mode() {
+    char *line = NULL;
+    size_t len = 0;
+
+    printf("42sh> ");
+    while (getline(&line, &len, stdin) != -1) {
+        struct lexer *lexer = lexer_init(line);
+        if (!lexer) {
+            fprintf(stderr, "Failed to initialize lexer\n");
+            continue;
+        }
+
+        enum parser_status status;
+        struct ast *ast = parser_parse(lexer, &status);
+        lexer_destroy(lexer);
+
+        if (status != PARSER_OK) {
+            fprintf(stderr, "Syntax error\n");
+        } else {
+            eval_ast(ast);
+        }
+
+        ast_free(ast);
+        printf("42sh> ");
+    }
+
+    free(line);
 }

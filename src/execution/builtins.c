@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
+#include "builtins.h"
 
 int builtin_echo(int argc, char **argv) {
     int newline = 1;
@@ -28,4 +31,15 @@ int builtin_true(void) {
 
 int builtin_false(void) {
     return 1;
+}
+
+int builtin_exit(int argc, char **argv) {
+    int exit_code = 0;
+
+    if (argc > 1) {
+        exit_code = atoi(argv[1]);
+    }
+
+    exit(exit_code);
+    return 0; // Jamais atteint mais pour M-CM-)viter des warnings.
 }
