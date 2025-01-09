@@ -8,8 +8,6 @@
 #include "execution/builtins.h"
 #include "lexer/lexer.h"
 
-void interactive_mode();
-
 int main(int argc, char **argv) {
     int pretty_print = 0;
     char *command = NULL;
@@ -66,7 +64,6 @@ int main(int argc, char **argv) {
         }
 
         ast_free(ast);
-        return 0;
     } else if (input_file) {
         //printf("Reading from input file...\n");
         char *line = NULL;
@@ -87,7 +84,7 @@ int main(int argc, char **argv) {
             lexer_destroy(lexer);
 
             if (status != PARSER_OK) {
-                fprintf(stderr, "PARSER EST PAS OK\n");
+                fprintf(stderr, "Syntax error\n");
                 free(line);
                 fclose(input_file);
                 return 2;
@@ -103,7 +100,6 @@ int main(int argc, char **argv) {
 
             ast_free(ast);
         }
-
         free(line);
         fclose(input_file);
     } else {
