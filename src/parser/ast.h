@@ -1,17 +1,18 @@
 #ifndef AST_H
 #define AST_H
 
+#include <stdlib.h>
+#include "ast.h"
+#include "../lexer/lexer.h"
+#include "parser.h"
+#include "../lexer/token.h"
 #include <unistd.h>
-
-enum ast_type
-{
-    AST_PLUS,
-    AST_MINUS,
-    AST_MUL,
-    AST_DIV,
-    AST_NUMBER,
-    AST_NEG
-};
+#include <err.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include "../execution/exec.h"
+#include "../execution/builtins.h"
 
 /**
  * This very simple AST structure should be sufficient for a simple AST.
@@ -21,20 +22,24 @@ enum ast_type
  */
 struct ast
 {
-    enum ast_type type; // The kind of node we're dealing with
+    struct token token; // The kind of node we're dealing with
     ssize_t value; // If the node is a number, it stores its value
-    struct ast *left; // The left branch if any, unary or binary
-    struct ast *right; // The right branch of the binary node
+    struct ast **children; // Array of pointers to child nodes
+    size_t children_count; // Number of children
 };
 
 /**
  ** \brief Allocates a new ast with the given type.
  */
-struct ast *ast_new(enum ast_type type);
+struct ast *ast_new(void);
 
 /**
  ** \brief Recursively frees the given ast.
  */
 void ast_free(struct ast *ast);
+
+void print_arbre(struct ast *node);
+
+void eval_ast(struct ast *root);
 
 #endif /* !AST_H */
