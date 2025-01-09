@@ -26,7 +26,7 @@ int main(int argc, char **argv)
 {
     if (argc != 2)
     {
-        fprintf(stderr, "Usage: %s <input_string>\n", argv[0]);
+        printf("error\n");
         return EXIT_FAILURE;
     }
 

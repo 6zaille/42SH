@@ -1,119 +1,135 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <ctype.h>
 #include "lexer.h"
 #include "token.h"
 
-static struct token *create_token(enum token_type type, const char *value)
-{
-    struct token *tok = malloc(sizeof(struct token));
-    if (!tok)
-        return NULL;
+static const struct {
+    const char *keyword;
+    enum token_type type;
+} keywords[] = {
+    {"if", TOKEN_IF},
+    {"then", TOKEN_THEN},
+    {"elif", TOKEN_ELIF},
+    {"else", TOKEN_ELSE},
+    {"fi", TOKEN_FI},
+};
 
+static struct token *create_token(enum token_type type, const char *value) {
+    struct token *tok = malloc(sizeof(struct token));
+    if (!tok) {
+        perror("malloc");
+        return NULL;
+    }
     tok->type = type;
-    if (value)
-    {
-        tok->value = strdup(value);
-        if (!tok->value)
-        {
-            free(tok);
-            return NULL;
-        }
-    }
-    else
-    {
-        tok->value = NULL;
-    }
+    tok->value = value ? strdup(value) : NULL;
     return tok;
 }
 
-static void skip_whitespace(struct lexer *lexer)
-{
-    while (lexer->input[lexer->pos] == ' ' || lexer->input[lexer->pos] == '\t')
+static void skip_whitespace(struct lexer *lexer) {
+    while (lexer->input[lexer->pos] == ' ' || lexer->input[lexer->pos] == '\t') {
         lexer->pos++;
+    }
 }
 
-struct lexer *lexer_init(const char *input)
-{
+static enum token_type check_keyword(const char *word) {
+    for (size_t i = 0; i < sizeof(keywords) / sizeof(keywords[0]); i++) {
+        if (strcmp(word, keywords[i].keyword) == 0) {
+            return keywords[i].type;
+        }
+    }
+    return TOKEN_WORD;
+}
+
+static int is_surrounded_by_letters(struct lexer *lexer, size_t pos) {
+    char prev = (pos > 0) ? lexer->input[pos - 1] : ' ';
+    char next = lexer->input[pos + 1];
+    return isalnum(prev) && isalnum(next);
+}
+
+static struct token *handle_single_quote(struct lexer *lexer) {
+    size_t start = ++lexer->pos; // Skip opening single quote
+    while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\'') {
+        lexer->pos++;
+    }
+
+    if (lexer->input[lexer->pos] == '\0') {
+        return create_token(TOKEN_ERROR, "Unmatched single quote");
+    }
+
+    size_t len = lexer->pos - start;
+    char *value = strndup(lexer->input + start, len);
+    lexer->pos++; // Skip closing single quote
+    return create_token(TOKEN_WORD, value);
+}
+
+struct lexer *lexer_init(const char *input) {
     struct lexer *lexer = malloc(sizeof(struct lexer));
-    if (!lexer)
+    if (!lexer) {
+        perror("malloc");
         return NULL;
+    }
     lexer->input = input;
     lexer->pos = 0;
     return lexer;
 }
 
-void lexer_destroy(struct lexer *lexer)
-{
-    if (lexer)
-        free(lexer);
+void lexer_destroy(struct lexer *lexer) {
+    free(lexer);
 }
 
-struct token *lexer_next_token(struct lexer *lexer)
-{
+struct token *lexer_next_token(struct lexer *lexer) {
     skip_whitespace(lexer);
 
-    if (lexer->input[lexer->pos] == '\0')
+    if (lexer->input[lexer->pos] == '\0') {
         return create_token(TOKEN_EOF, NULL);
-
-    const char *start = &lexer->input[lexer->pos];
-
-    if (strncmp(start, "if", 2) == 0 && !isalnum(start[2]))
-    {
-        lexer->pos += 2;
-        return create_token(TOKEN_IF, "if");
-    }
-    if (strncmp(start, "then", 4) == 0 && !isalnum(start[4]))
-    {
-        lexer->pos += 4;
-        return create_token(TOKEN_THEN, "then");
-    }
-    if (strncmp(start, "else", 4) == 0 && !isalnum(start[4]))
-    {
-        lexer->pos += 4;
-        return create_token(TOKEN_ELSE, "else");
-    }
-    if (strncmp(start, "elif", 4) == 0 && !isalnum(start[4]))
-    {
-        lexer->pos += 4;
-        return create_token(TOKEN_ELIF, "elif");
-    }
-    if (strncmp(start, "fi", 2) == 0 && !isalnum(start[2]))
-    {
-        lexer->pos += 2;
-        return create_token(TOKEN_FI, "fi");
     }
 
-    if (lexer->input[lexer->pos] == ';')
-    {
+    char c = lexer->input[lexer->pos];
+    if (c == '\'') {
+        if (is_surrounded_by_letters(lexer, lexer->pos)) {
+            lexer->pos++; // Ignore this single quote
+            return lexer_next_token(lexer);
+        }
+        return create_token(TOKEN_SINGLE_QUOTE, NULL);
+    } else if (c == '\\') {
         lexer->pos++;
-        return create_token(TOKEN_SEMICOLON, ";");
+        if (lexer->input[lexer->pos] == 'n') {
+            lexer->pos++;
+            return create_token(TOKEN_NEWLINE, NULL);
+        }
+    } else if (c == '\n') {
+        lexer->pos++;
+        return create_token(TOKEN_NEWLINE, NULL);
+    } else if (c == ';') {
+        lexer->pos++;
+        return create_token(TOKEN_SEMICOLON, NULL);
+    } else {
+        size_t start = lexer->pos;
+        while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos]) &&
+               lexer->input[lexer->pos] != ';' && lexer->input[lexer->pos] != '\'' &&
+               lexer->input[lexer->pos] != '\\' && lexer->input[lexer->pos] != '\n') {
+            lexer->pos++;
+        }
+
+        size_t len = lexer->pos - start;
+        char *value = strndup(lexer->input + start, len);
+        enum token_type type = check_keyword(value);
+        if (type != TOKEN_WORD) {
+            free(value);
+            return create_token(type, NULL);
+        }
+        return create_token(TOKEN_WORD, value);
     }
 
-    if (lexer->input[lexer->pos] == '\n')
-    {
-        lexer->pos++;
-        return create_token(TOKEN_NEWLINE, "\\n");
-    }
-
-    size_t start_pos = lexer->pos;
-    while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos]) &&
-           lexer->input[lexer->pos] != ';' && lexer->input[lexer->pos] != '\n')
-    {
-        lexer->pos++;
-    }
-    size_t length = lexer->pos - start_pos;
-    return create_token(TOKEN_WORD, strndup(&lexer->input[start_pos], length));
+    return create_token(TOKEN_ERROR, "Unexpected character");
 }
 
-void token_free(struct token *tok)
-{
-    if (!tok)
-        return;
-
-    if (tok->value)
-        free(tok->value);
-
-    free(tok);
+void token_free(struct token *token) {
+    if (token) {
+        free(token->value);
+        free(token);
+    }
 }
