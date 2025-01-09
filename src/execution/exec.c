@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "exec.h"
 #include "builtins.h"
+
 
 int execute_builtin(int argc, char **argv) {
     if (argc == 0 || argv == NULL) {
