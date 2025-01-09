@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
     char *command = NULL;
     FILE *input_file = NULL;
 
-    printf("Parsing command-line arguments...\n");
+    //printf("Parsing command-line arguments...\n");
     // Parse command-line arguments
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-c") == 0) {
@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     }
 
     if (command) {
-        printf("Executing command: %s\n", command);
+        //printf("Executing command: %s\n", command);
         struct lexer *lexer = lexer_init(command);
         if (!lexer) {
             fprintf(stderr, "Failed to initialize lexer\n");
@@ -58,22 +58,22 @@ int main(int argc, char **argv) {
         }
 
         if (pretty_print) {
-            printf("Pretty printing AST...\n");
-            print_arbre(ast, 0);
+            //printf("Pretty printing AST...\n");
+            //print_arbre(ast, 0);
         } else {
-            printf("Evaluating AST...\n");
+            //printf("Evaluating AST...\n");
             eval_ast(ast);
         }
 
         ast_free(ast);
         return 0;
     } else if (input_file) {
-        printf("Reading from input file...\n");
+        //printf("Reading from input file...\n");
         char *line = NULL;
         size_t len = 0;
 
         while (getline(&line, &len, input_file) != -1) {
-            printf("Processing line: %s\n", line);
+            //printf("Processing line: %s\n", line);
             struct lexer *lexer = lexer_init(line);
             if (!lexer) {
                 fprintf(stderr, "Failed to initialize lexer\n");
@@ -94,10 +94,10 @@ int main(int argc, char **argv) {
             }
 
             if (pretty_print) {
-                printf("Pretty printing AST...\n");
-                print_arbre(ast, 0);
+                // printf("Pretty printing AST...\n");
+                // print_arbre(ast, 0);
             } else {
-                printf("Evaluating AST...\n");
+                // printf("Evaluating AST...\n");
                 eval_ast(ast);
             }
 
@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
         free(line);
         fclose(input_file);
     } else {
-        printf("Entering interactive mode...\n");
+        // printf("Entering interactive mode...\n");
         interactive_mode();
     }
 
@@ -118,9 +118,9 @@ void interactive_mode() {
     char *line = NULL;
     size_t len = 0;
 
-    printf("42sh> ");
+    // printf("42sh> ");
     while (getline(&line, &len, stdin) != -1) {
-        printf("Processing line: %s\n", line);
+        // printf("Processing line: %s\n", line);
         struct lexer *lexer = lexer_init(line);
         if (!lexer) {
             fprintf(stderr, "Failed to initialize lexer\n");
@@ -132,15 +132,15 @@ void interactive_mode() {
         lexer_destroy(lexer);
 
         if (status != PARSER_OK) {
-            printf("ICI PROBLEME HUGO FONCTION PARSER TOUJOURS ERROR\n");
+            // printf("ICI PROBLEME HUGO FONCTION PARSER TOUJOURS ERROR\n");
             fprintf(stderr, "Syntax error\n");
         } else {
-            printf("Evaluating AST...\n");
+            // printf("Evaluating AST...\n");
             eval_ast(ast);
         }
 
         ast_free(ast);
-        printf("42sh> ");
+        // printf("42sh> ");
     }
 
     free(line);

@@ -27,8 +27,8 @@ int main(void)
         malloc(sizeof(struct ast *) * root->children[0]->children_count);
     root->children[0]->children[0] = ast_new();
     root->children[0]->children[0]->token.type = TOKEN_WORD;
-    root->children[0]->children[0]->token.value = "pipi";
-
+    root->children[0]->children[0]->token.value = "toto";
+    print_arbre(root, 0);
     eval_ast(root);
 
     printf("---------------------------------------------------------------------\n");

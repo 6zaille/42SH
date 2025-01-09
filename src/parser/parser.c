@@ -5,136 +5,130 @@
 #include "../lexer/token.h"
 #include "ast.h"
 
-// Déclaration d'un token courant statique
-static struct token *current_token = NULL;
-
-// Fonction pour consommer le token courant et passer au suivant
-static void consume_token(struct lexer *lexer)
+static struct token *consume_token(struct lexer *lexer)
 {
-    token_free(current_token);
-    current_token = lexer_next_token(lexer);
+    struct token *tok = lexer_next_token(lexer);
+    if (!tok)
+    {
+        fprintf(stderr, "Erreur: Impossible de consommer un token.\n");
+        return NULL;
+    }
+    return tok;
 }
 
-// Fonction pour vérifier si le token courant est du type attendu
-static void expect(enum token_type type, enum parser_status *status, struct lexer *lexer)
+static void expect_token(struct token *tok, enum token_type type, enum parser_status *status)
 {
-    if (current_token->type != type)
+    if (!tok || tok->type != type)
     {
         *status = PARSER_ERROR;
-        return;
     }
-    consume_token(lexer);
 }
 
 static struct ast *parse_simple_command(struct lexer *lexer, enum parser_status *status)
 {
-    struct ast *node = ast_new();
-    if (!node)
+    struct ast *command_node = ast_new();
+    if (!command_node)
     {
         *status = PARSER_ERROR;
         return NULL;
     }
 
-    if (current_token->type != TOKEN_WORD)
+    struct token *tok = consume_token(lexer);
+    if (!tok || tok->type != TOKEN_WORD)
     {
         *status = PARSER_ERROR;
-        ast_free(node);
+        ast_free(command_node);
         return NULL;
     }
 
-    node->token = *current_token;
-    consume_token(lexer);
+    command_node->token = *tok;
+    command_node->children = NULL;
+    command_node->children_count = 0;
 
-    // Collect additional WORDs as children (arguments)
-    while (current_token->type == TOKEN_WORD)
+    struct ast *current_parent = command_node;
+
+    while ((tok = consume_token(lexer)) && tok->type == TOKEN_WORD)
     {
-        struct ast *child = ast_new();
-        if (!child)
+        struct ast *arg_node = ast_new();
+        if (!arg_node)
         {
             *status = PARSER_ERROR;
-            ast_free(node);
+            ast_free(command_node);
             return NULL;
         }
-        child->token = *current_token;
-        node->children = realloc(node->children, sizeof(struct ast *) * (node->children_count + 1));
-        node->children[node->children_count++] = child;
-        consume_token(lexer);
+
+        arg_node->token = *tok;
+
+        current_parent->children = realloc(current_parent->children, sizeof(struct ast *) * (current_parent->children_count + 1));
+        current_parent->children[current_parent->children_count++] = arg_node;
+        current_parent = arg_node;
     }
 
-    return node;
+    return command_node;
 }
-// Fonction pour analyser une liste de commandes
 
 static struct ast *parse_command_list(struct lexer *lexer, enum parser_status *status)
 {
-    // printf("Parsing command list...\n");
-    struct ast *root = parse_simple_command(lexer, status);
-    if (*status != PARSER_OK)
+    struct ast *root = ast_new();
+    if (!root)
     {
-        // printf("Erreur lors du parsing de la première commande.\n");
+        *status = PARSER_ERROR;
         return NULL;
     }
 
-    while (current_token->type == TOKEN_SEMICOLON || current_token->type == TOKEN_NEWLINE)
-    {
-        // printf("Token trouvé : type=%d, valeur='%s'\n", current_token->type, current_token->value ? current_token->value : "(null)");
-        consume_token(lexer);
+    root->children = NULL;
+    root->children_count = 0;
 
-        // Si EOF est rencontré après un séparateur, arrêter le parsing proprement
-        if (current_token->type == TOKEN_EOF)
+    struct ast *first_command = parse_simple_command(lexer, status);
+    if (*status != PARSER_OK)
+    {
+        ast_free(root);
+        return NULL;
+    }
+
+    root->children = malloc(sizeof(struct ast *));
+    root->children[0] = first_command;
+    root->children_count = 1;
+
+    struct token *tok;
+    while ((tok = consume_token(lexer)) && (tok->type == TOKEN_SEMICOLON || tok->type == TOKEN_NEWLINE))
+    {
+        if ((tok = consume_token(lexer)) && tok->type == TOKEN_EOF)
         {
-            // printf("DEBUG: Fin du flux rencontrée après un séparateur.\n");
             break;
         }
 
         struct ast *next_command = parse_simple_command(lexer, status);
         if (*status != PARSER_OK)
         {
-            // printf("Erreur lors du parsing de la commande suivante.\n");
             ast_free(root);
             return NULL;
         }
 
-        struct ast *new_root = ast_new();
-        if (!new_root)
-        {
-            // printf("Erreur : impossible d'allouer un nouveau nœud AST.\n");
-            ast_free(root);
-            ast_free(next_command);
-            *status = PARSER_ERROR;
-            return NULL;
-        }
-        new_root->token.type = TOKEN_SEMICOLON;
-        new_root->children = malloc(2 * sizeof(struct ast *));
-        new_root->children[0] = root;
-        new_root->children[1] = next_command;
-        new_root->children_count = 2;
-
-        root = new_root;
+        root->children = realloc(root->children, sizeof(struct ast *) * (root->children_count + 1));
+        root->children[root->children_count++] = next_command;
     }
-    // printf("Parsing command list terminé.\n");
+
     return root;
 }
 
-// Fonction principale pour analyser le lexer et retourner l'AST
 struct ast *parser_parse(struct lexer *lexer, enum parser_status *status)
 {
-    *status = PARSER_OK; // Initialise le statut à PARSER_OK
-    current_token = lexer_next_token(lexer); // Récupère le premier token
-    if (!current_token)
+    *status = PARSER_OK;
+
+    struct ast *root = parse_command_list(lexer, status);
+    if (*status != PARSER_OK)
     {
-        *status = PARSER_ERROR; // Met à jour le statut à PARSER_ERROR si aucun token n'est trouvé
+        fprintf(stderr, "Erreur: Parsing échoué.\n");
         return NULL;
     }
 
-    struct ast *root = parse_command_list(lexer, status); // Analyse la liste de commandes
-
-    if (current_token->type != TOKEN_EOF) // Vérifie si le token courant est la fin du flux
+    struct token *tok = consume_token(lexer);
+    if (tok && tok->type != TOKEN_EOF)
     {
-        // printf("DEBUG: Erreur, flux non terminé correctement.\n");
         *status = PARSER_ERROR;
+        fprintf(stderr, "Erreur: Flux non terminé correctement.\n");
     }
 
-    token_free(current_token); // Libère la mémoire du token courant
-    return root; // Retourne la racine de l'AST
+    return root;
 }
