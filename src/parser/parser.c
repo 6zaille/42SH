@@ -63,52 +63,59 @@ static struct ast *parse_simple_command(struct lexer *lexer, enum parser_status 
 
     return node;
 }
-
+// Fonction pour analyser une liste de commandes
 static struct ast *parse_command_list(struct lexer *lexer, enum parser_status *status)
 {
+    // Analyse une commande simple
     struct ast *root = parse_simple_command(lexer, status);
     if (*status != PARSER_OK)
         return NULL;
 
+    // Tant que le token courant est un point-virgule ou une nouvelle ligne
     while (current_token->type == TOKEN_SEMICOLON || current_token->type == TOKEN_NEWLINE)
     {
+        // Consomme le token courant
         consume_token(lexer);
+        // Analyse la commande suivante
         struct ast *next_command = parse_simple_command(lexer, status);
         if (*status != PARSER_OK)
         {
-            ast_free(root);
+            ast_free(root); // Libère la mémoire de la racine si une erreur se produit
             return NULL;
         }
 
+        // Crée un nouveau nœud AST pour représenter la liste de commandes
         struct ast *new_root = ast_new();
-        new_root->token.type = TOKEN_SEMICOLON;
-        new_root->children = malloc(2 * sizeof(struct ast *));
-        new_root->children[0] = root;
-        new_root->children[1] = next_command;
-        new_root->children_count = 2;
+        new_root->token.type = TOKEN_SEMICOLON; // Définit le type du token comme point-virgule
+        new_root->children = malloc(2 * sizeof(struct ast *)); // Alloue la mémoire pour deux enfants
+        new_root->children[0] = root; // Le premier enfant est la commande précédente
+        new_root->children[1] = next_command; // Le deuxième enfant est la commande suivante
+        new_root->children_count = 2; // Met à jour le nombre d'enfants
 
+        // Met à jour la racine
         root = new_root;
     }
 
-    return root;
+    return root; // Retourne la racine de l'AST
 }
 
+// Fonction principale pour analyser le lexer et retourner l'AST
 struct ast *parser_parse(struct lexer *lexer, enum parser_status *status)
 {
-    *status = PARSER_OK;
-    current_token = lexer_next_token(lexer);
+    *status = PARSER_OK; // Initialise le statut à PARSER_OK
+    current_token = lexer_next_token(lexer); // Récupère le premier token
     
     if (!current_token)
     {
-        *status = PARSER_ERROR;
+        *status = PARSER_ERROR; // Met à jour le statut à PARSER_ERROR si aucun token n'est trouvé
         return NULL;
     }
 
-    struct ast *root = parse_command_list(lexer, status);
+    struct ast *root = parse_command_list(lexer, status); // Analyse la liste de commandes
 
-    if (current_token->type != TOKEN_EOF)
-        *status = PARSER_ERROR;
+    if (current_token->type != TOKEN_EOF) // Vérifie si le token courant est la fin du stream
+        *status = PARSER_ERROR; // Met à jour le statut à PARSER_ERROR si ce n'est pas le cas
 
-    token_free(current_token);
-    return root;
+    token_free(current_token); // Libère la mémoire du token courant
+    return root; // Retourne la racine de l'AST
 }
