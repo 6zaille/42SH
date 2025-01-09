@@ -37,38 +37,71 @@ void ast_free(struct ast *node)
     free(node);
 }
 
-// Function to evaluate an AST
-void eval_ast(struct ast *root)
+// Function to traverse a branch downwards
+int traverse_branch(struct ast *node)
 {
-    if (!root || !root->children)
-        return;
+    if (!node)
+        return 0;
 
-    // Iterate over all children of the root node
-    for (size_t i = 0; i < root->children_count; i++)
+    int max_depth = 0;
+
+    for (size_t i = 0; i < node->children_count; i++)
     {
-        struct ast *child = root->children[i];
-        if (!child || !child->children)
-            continue;
+        int depth = traverse_branch(node->children[i]);
+        if (depth > max_depth)
+            max_depth = depth;
+    }
 
+    return max_depth + 1;
+}
+
+
+// Function to evaluate an AST
+void __eval_ast(struct ast *root)
+{
+    if (!root)
+        return;
+    // Process the current node after its children
+    if (root->token.value)
+    {
         // Allocate memory for the arguments array
-        char **args = malloc((child->children_count + 1) * sizeof(char *));
+        int taille = traverse_branch(root);
+        char **args = malloc((taille) * sizeof(char *));
         if (!args)
             return;
 
         // Populate the arguments array
-        args[0] = child->token.value;
-        for (size_t j = 0; j < child->children_count; j++)
+        args[0] = root->token.value;
+        int save = 1;
+
+        struct ast *current = root;
+        while (current->children_count > 0)
         {
-            args[j+1] = child->children[j]->token.value;
+            current = current->children[0];
+            args[save] = current->token.value;
+            save++;
         }
 
         // Execute the command with the arguments
-        int res = execute_command(child->children_count +1 , args);
+        for (size_t k = 0; k < taille; k++)
+        {
+            printf("args[%zu] = %s\n", k, args[k]);
+        }
+        int res = execute_command(taille, args);
 
         // Free the arguments array
         free(args);
     }
 }
+
+void eval_ast(struct ast *root)
+{
+    for (size_t i = 0; i < root->children_count; i++)
+    {
+        __eval_ast(root->children[i]);
+    }
+}
+
 
 // Function to print the AST
 void print_arbre(struct ast *node)
