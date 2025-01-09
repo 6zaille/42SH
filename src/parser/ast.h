@@ -38,7 +38,7 @@ struct ast *ast_new(void);
  */
 void ast_free(struct ast *ast);
 
-void print_arbre(struct ast *node);
+void print_arbre(struct ast *node, int depth);
 
 void eval_ast(struct ast *root);
 
