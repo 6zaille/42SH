@@ -81,12 +81,6 @@ void __eval_ast(struct ast *root)
             args[save] = current->token.value;
             save++;
         }
-
-        // Execute the command with the arguments
-        for (size_t k = 0; k < taille; k++)
-        {
-            printf("args[%zu] = %s\n", k, args[k]);
-        }
         int res = execute_command(taille, args);
 
         // Free the arguments array
@@ -104,18 +98,27 @@ void eval_ast(struct ast *root)
 
 
 // Function to print the AST
-void print_arbre(struct ast *node)
+void print_arbre(struct ast *node, int depth)
 {
     if (!node)
         return;
 
+    // Print indentation based on the depth of the node
+    for (int i = 0; i < depth; i++)
+    {
+        if (i == depth - 1)
+            printf("  └─―――");
+        else
+            printf("  │ ");
+        //printf("   ");
+    }
+
     // Print the current node's value and token type
-    printf("Node value: %s, Token type: %d\n", node->token.value, node->token.type);
+    printf("Node value: %s\n", node->token.value);
 
     // Recursively print all children nodes
     for (size_t i = 0; i < node->children_count; i++)
     {
-        printf("Child %zu of node value %s, Token type: %d:\n", i, node->token.value, node->token.type);
-        print_arbre(node->children[i]);
+        print_arbre(node->children[i], depth + 1);
     }
 }
