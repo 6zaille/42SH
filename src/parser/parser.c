@@ -5,7 +5,7 @@
 #include "../lexer/token.h"
 #include "ast.h"
 
-// Déclaration d'un token courant statique
+// DM-CM-)claration d'un token courant statique
 static struct token *current_token = NULL;
 
 // Fonction pour consommer le token courant et passer au suivant
@@ -15,7 +15,7 @@ static void consume_token(struct lexer *lexer)
     current_token = lexer_next_token(lexer);
 }
 
-// Fonction pour vérifier si le token courant est du type attendu
+// Fonction pour vM-CM-)rifier si le token courant est du type attendu
 static void expect(enum token_type type, enum parser_status *status, struct lexer *lexer)
 {
     if (current_token->type != type)
@@ -80,19 +80,19 @@ static struct ast *parse_command_list(struct lexer *lexer, enum parser_status *s
         struct ast *next_command = parse_simple_command(lexer, status);
         if (*status != PARSER_OK)
         {
-            ast_free(root); // Libère la mémoire de la racine si une erreur se produit
+            ast_free(root); // LibM-CM-(re la mM-CM-)moire de la racine si une erreur se produit
             return NULL;
         }
 
-        // Crée un nouveau nœud AST pour représenter la liste de commandes
+        // CrM-CM-)e un nouveau nM-EM-^Sud AST pour reprM-CM-)senter la liste de commandes
         struct ast *new_root = ast_new();
-        new_root->token.type = TOKEN_SEMICOLON; // Définit le type du token comme point-virgule
-        new_root->children = malloc(2 * sizeof(struct ast *)); // Alloue la mémoire pour deux enfants
-        new_root->children[0] = root; // Le premier enfant est la commande précédente
-        new_root->children[1] = next_command; // Le deuxième enfant est la commande suivante
-        new_root->children_count = 2; // Met à jour le nombre d'enfants
+        new_root->token.type = TOKEN_SEMICOLON; // DM-CM-)finit le type du token comme point-virgule
+        new_root->children = malloc(2 * sizeof(struct ast *)); // Alloue la mM-CM-)moire pour deux enfants
+        new_root->children[0] = root; // Le premier enfant est la commande prM-CM-)cM-CM-)dente
+        new_root->children[1] = next_command; // Le deuxiM-CM-(me enfant est la commande suivante
+        new_root->children_count = 2; // Met M-CM-  jour le nombre d'enfants
 
-        // Met à jour la racine
+        // Met M-CM-  jour la racine
         root = new_root;
     }
 
@@ -102,20 +102,20 @@ static struct ast *parse_command_list(struct lexer *lexer, enum parser_status *s
 // Fonction principale pour analyser le lexer et retourner l'AST
 struct ast *parser_parse(struct lexer *lexer, enum parser_status *status)
 {
-    *status = PARSER_OK; // Initialise le statut à PARSER_OK
-    current_token = lexer_next_token(lexer); // Récupère le premier token
+    *status = PARSER_OK; // Initialise le statut M-CM-  PARSER_OK
+    current_token = lexer_next_token(lexer); // RM-CM-)cupM-CM-(re le premier token
     
     if (!current_token)
     {
-        *status = PARSER_ERROR; // Met à jour le statut à PARSER_ERROR si aucun token n'est trouvé
+        *status = PARSER_ERROR; // Met M-CM-  jour le statut M-CM-  PARSER_ERROR si aucun token n'est trouvM-CM-)
         return NULL;
     }
 
     struct ast *root = parse_command_list(lexer, status); // Analyse la liste de commandes
 
-    if (current_token->type != TOKEN_EOF) // Vérifie si le token courant est la fin du stream
-        *status = PARSER_ERROR; // Met à jour le statut à PARSER_ERROR si ce n'est pas le cas
+    if (current_token->type != TOKEN_EOF) // VM-CM-)rifie si le token courant est la fin du stream
+        *status = PARSER_ERROR; // Met M-CM-  jour le statut M-CM-  PARSER_ERROR si ce n'est pas le cas
 
-    token_free(current_token); // Libère la mémoire du token courant
+    token_free(current_token); // LibM-CM-(re la mM-CM-)moire du token courant
     return root; // Retourne la racine de l'AST
 }
