@@ -1,32 +1,51 @@
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "ast.h"
+#include <string.h>
+#include "exec.h"
+#include "builtins.h"
 
-int execute_ast(struct ast *root) {
-    if (!root) {
-        return -1;
+int execute_builtin(int argc, char **argv) {
+    if (argc == 0 || argv == NULL) {
+        return 1;
     }
-    if (root->type == AST_NUMBER) {
-        printf("Executing AST node with value: %zd\n", root->value);
-        return 0;
+
+    if (strcmp(argv[0], "echo") == 0) {
+        return builtin_echo(argc, argv);
     }
-    if (root->type == AST_PLUS || root->type == AST_MINUS ||
-        root->type == AST_MUL || root->type == AST_DIV) {
-        int left_status = execute_ast(root->left);
-        int right_status = execute_ast(root->right);
-        return left_status || right_status;
+    if (strcmp(argv[0], "true") == 0) {
+        return builtin_true();
     }
-    return 0;
+    if (strcmp(argv[0], "false") == 0) {
+        return builtin_false();
+    }
+    if (strcmp(argv[0], "exit") == 0) {
+        return builtin_exit(argc, argv);
+    }
+
+    return -1; // Indique que ce n'est pas un builtin.
 }
 
-int execute_command(char **command) {
-    if (!command || !command[0]) {
-        return -1;
+int execute_command(int argc, char **argv) {
+    int builtin_status = execute_builtin(argc, argv);
+    if (builtin_status != -1) {
+        return builtin_status;
     }
-    if (execvp(command[0], command) == -1) {
-        perror("execvp");
-        return -1;
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        if (execvp(argv[0], argv) == -1) {
+            perror("42sh");
+            exit(127);
+        }
+    } else if (pid > 0) {
+        int status;
+        waitpid(pid, &status, 0);
+        if (WIFEXITED(status)) {
+            return WEXITSTATUS(status);
+        }
+    } else {
+        perror("fork");
+        return 1;
     }
     return 0;
 }

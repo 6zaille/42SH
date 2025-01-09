@@ -6,6 +6,35 @@
 #include "parser/parser.h"
 #include "execution/exec.h"
 
+void verbose_log(const char *message) {
+    printf("[VERBOSE] %s\n", message);
+}
+
+void set_verbose_mode(int mode) {
+    (void)mode;
+}
+
+int execute_ast(struct ast *root) {
+    if (!root) {
+        return -1;
+    }
+    return root->value;
+}
+
+struct ast *parse_input_from_string(const char *input) {
+    if (!input || strlen(input) == 0) {
+        return NULL;
+    }
+
+    struct ast *node = ast_new(AST_NUMBER);
+    if (!node) {
+        fprintf(stderr, "Error allocating AST node\n");
+        return NULL;
+    }
+    node->value = 42;
+    return node;
+}
+
 int handle_c_option(char *command) {
     if (!command || strlen(command) == 0) {
         fprintf(stderr, "42sh: option -c requires a non-empty command\n");
@@ -59,6 +88,8 @@ int main(int argc, char **argv) {
         return handle_c_option(command);
     }
 
-    printf("Starting interactive mode...\n");
+    verbose_log("Starting interactive mode...");
+    printf("Interactive mode is not implemented yet.\n");
+
     return 0;
 }
