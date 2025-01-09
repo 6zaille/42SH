@@ -10,25 +10,38 @@
 
 void interactive_mode();
 
-
 int main(int argc, char **argv) {
     int pretty_print = 0;
     char *command = NULL;
+    FILE *input_file = NULL;
 
-    printf("Debug: Starting main function\n");
-
-    // Handle options (this part is missing in your code, you need to implement it)
-    // For example, you can parse command line arguments here
-    // option_status = handle_options(argc, argv, &pretty_print, &command);
-
-    int option_status = 0; // Assuming handle_options sets this to 0 on success
-    if (option_status != 0) {
-        printf("Debug: handle_options returned %d\n", option_status);
-        return option_status;
+    printf("Parsing command-line arguments...\n");
+    // Parse command-line arguments
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-c") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "Error: Missing argument for -c\n");
+                fprintf(stderr, "Usage: 42sh [-c COMMAND] [FILE] [ARGUMENTS...]\n");
+                return 2;
+            }
+            command = argv[++i];
+        } else if (strcmp(argv[i], "--pretty-print") == 0) {
+            pretty_print = 1;
+        } else if (!input_file) {
+            input_file = fopen(argv[i], "r");
+            if (!input_file) {
+                fprintf(stderr, "Error: Unable to open file %s\n", argv[i]);
+                return 2;
+            }
+        } else {
+            fprintf(stderr, "Error: Unexpected argument %s\n", argv[i]);
+            fprintf(stderr, "Usage: 42sh [-c COMMAND] [FILE] [ARGUMENTS...]\n");
+            return 2;
+        }
     }
 
     if (command) {
-        printf("Debug: Command mode with command: %s\n", command);
+        printf("Executing command: %s\n", command);
         struct lexer *lexer = lexer_init(command);
         if (!lexer) {
             fprintf(stderr, "Failed to initialize lexer\n");
@@ -45,19 +58,59 @@ int main(int argc, char **argv) {
         }
 
         if (pretty_print) {
-            printf("Debug: Pretty printing AST\n");
+            printf("Pretty printing AST...\n");
             print_arbre(ast, 0);
         } else {
-            printf("Debug: Evaluating AST\n");
+            printf("Evaluating AST...\n");
             eval_ast(ast);
         }
 
         ast_free(ast);
         return 0;
+    } else if (input_file) {
+        printf("Reading from input file...\n");
+        char *line = NULL;
+        size_t len = 0;
+
+        while (getline(&line, &len, input_file) != -1) {
+            printf("Processing line: %s\n", line);
+            struct lexer *lexer = lexer_init(line);
+            if (!lexer) {
+                fprintf(stderr, "Failed to initialize lexer\n");
+                free(line);
+                fclose(input_file);
+                return 2;
+            }
+
+            enum parser_status status;
+            struct ast *ast = parser_parse(lexer, &status);
+            lexer_destroy(lexer);
+
+            if (status != PARSER_OK) {
+                fprintf(stderr, "PARSER EST PAS OK\n");
+                free(line);
+                fclose(input_file);
+                return 2;
+            }
+
+            if (pretty_print) {
+                printf("Pretty printing AST...\n");
+                print_arbre(ast, 0);
+            } else {
+                printf("Evaluating AST...\n");
+                eval_ast(ast);
+            }
+
+            ast_free(ast);
+        }
+
+        free(line);
+        fclose(input_file);
+    } else {
+        printf("Entering interactive mode...\n");
+        interactive_mode();
     }
 
-    printf("Debug: Entering interactive mode\n");
-    interactive_mode();
     return 0;
 }
 
@@ -67,24 +120,22 @@ void interactive_mode() {
 
     printf("42sh> ");
     while (getline(&line, &len, stdin) != -1) {
-        printf("Debug: Read line: %s\n", line);
+        printf("Processing line: %s\n", line);
         struct lexer *lexer = lexer_init(line);
         if (!lexer) {
             fprintf(stderr, "Failed to initialize lexer\n");
             continue;
         }
-        printf("Debug: Lexer initialized\n");
-        printf("Debug lexr %s \n",lexer->input);
+
         enum parser_status status;
         struct ast *ast = parser_parse(lexer, &status);
-        printf("%d\n",status);
-        printf("Debug: Parser parsed\n");
         lexer_destroy(lexer);
-        printf("Debug: Lexer destroyed\n");
+
         if (status != PARSER_OK) {
+            printf("ICI PROBLEME HUGO FONCTION PARSER TOUJOURS ERROR\n");
             fprintf(stderr, "Syntax error\n");
         } else {
-            printf("Debug: Evaluating AST\n");
+            printf("Evaluating AST...\n");
             eval_ast(ast);
         }
 
