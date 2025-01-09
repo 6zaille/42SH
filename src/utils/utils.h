@@ -11,8 +11,5 @@ char *xstrdup(const char *str);
 void set_verbose_mode(int enabled);
 void verbose_log(const char *message);
 
-int handle_options(int argc, char **argv, char **command, int *pretty_print);
-
-
 #endif /* !UTILS_H */
 
