@@ -92,7 +92,7 @@ void __eval_ast(struct ast *root)
 
 void eval_ast(struct ast *root)
 {
-    // print_arbre(root, 0);
+    //print_arbre(root, 0);
     for (size_t i = 0; i < root->children_count; i++)
     {
         __eval_ast(root->children[i]);
@@ -104,7 +104,6 @@ void print_arbre(struct ast *node, int depth)
 {
     if (!node)
         return;
-    printf("Debug: Evaluating AST12321321321\n");
     // Print indentation based on the depth of the node
     for (int i = 0; i < depth; i++)
     {
