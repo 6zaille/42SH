@@ -1,9 +1,9 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "../lexer/lexer.h"
 #include "../lexer/token.h"
 #include "ast.h"
-#include "../lexer/lexer.h"
 
 enum parser_status
 {

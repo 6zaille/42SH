@@ -13,7 +13,7 @@ struct ast *ast_new(void)
     }
 
     // Initialize the node's fields
-    node->token = (struct token){.value = NULL, .type = 0};
+    node->token = (struct token){ .value = NULL, .type = 0 };
     node->value = 0;
     node->children = NULL;
     node->children_count = 0;
@@ -55,7 +55,6 @@ int traverse_branch(struct ast *node)
     return max_depth + 1;
 }
 
-
 // Function to evaluate an AST
 void __eval_ast(struct ast *root)
 {
@@ -93,14 +92,12 @@ void __eval_ast(struct ast *root)
 
 void eval_ast(struct ast *root)
 {
-
-    //print_arbre(root, 0);
+    // print_arbre(root, 0);
     for (size_t i = 0; i < root->children_count; i++)
     {
         __eval_ast(root->children[i]);
     }
 }
-
 
 // Function to print the AST
 void print_arbre(struct ast *node, int depth)
@@ -115,7 +112,7 @@ void print_arbre(struct ast *node, int depth)
             printf("  └─―――");
         else
             printf("  │ ");
-        //printf("   ");
+        // printf("   ");
     }
 
     // Print the current node's value and token type

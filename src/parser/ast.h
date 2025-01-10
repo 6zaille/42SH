@@ -1,18 +1,19 @@
 #ifndef AST_H
 #define AST_H
 
-#include <stdlib.h>
-#include "ast.h"
-#include "../lexer/lexer.h"
-#include "parser.h"
-#include "../lexer/token.h"
-#include <unistd.h>
 #include <err.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include "../execution/exec.h"
+#include <unistd.h>
+
 #include "../execution/builtins.h"
+#include "../execution/exec.h"
+#include "../lexer/lexer.h"
+#include "../lexer/token.h"
+#include "ast.h"
+#include "parser.h"
 
 /**
  * This very simple AST structure should be sufficient for a simple AST.

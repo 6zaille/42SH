@@ -9,7 +9,6 @@ struct lexer
     size_t pos;
 };
 
-
 struct lexer *lexer_init(const char *input);
 
 void lexer_destroy(struct lexer *lexer);

@@ -1,6 +1,8 @@
-#include <stdlib.h>
-#include <stdio.h>
 #include "parser.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "../lexer/lexer.h"
 #include "../lexer/token.h"
 #include "ast.h"
@@ -16,7 +18,8 @@ static struct token *consume_token(struct lexer *lexer)
     return tok;
 }
 
-/*static void expect_token(struct token *tok, enum token_type type, enum parser_status *status)
+/*static void expect_token(struct token *tok, enum token_type type, enum
+parser_status *status)
 {
     if (!tok || tok->type != type)
     {
@@ -24,7 +27,8 @@ static struct token *consume_token(struct lexer *lexer)
     }
 }
 */
-static struct ast *parse_simple_command(struct lexer *lexer, enum parser_status *status)
+static struct ast *parse_simple_command(struct lexer *lexer,
+                                        enum parser_status *status)
 {
     struct ast *command_node = ast_new();
     if (!command_node)
@@ -59,7 +63,9 @@ static struct ast *parse_simple_command(struct lexer *lexer, enum parser_status 
 
         arg_node->token = *tok;
 
-        current_parent->children = realloc(current_parent->children, sizeof(struct ast *) * (current_parent->children_count + 1));
+        current_parent->children = realloc(
+            current_parent->children,
+            sizeof(struct ast *) * (current_parent->children_count + 1));
         current_parent->children[current_parent->children_count++] = arg_node;
         current_parent = arg_node;
     }
@@ -67,7 +73,8 @@ static struct ast *parse_simple_command(struct lexer *lexer, enum parser_status 
     return command_node;
 }
 
-static struct ast *parse_command_list(struct lexer *lexer, enum parser_status *status)
+static struct ast *parse_command_list(struct lexer *lexer,
+                                      enum parser_status *status)
 {
     struct ast *root = ast_new();
     if (!root)
@@ -91,7 +98,8 @@ static struct ast *parse_command_list(struct lexer *lexer, enum parser_status *s
     root->children_count = 1;
 
     struct token *tok;
-    while ((tok = consume_token(lexer)) && (tok->type == TOKEN_SEMICOLON || tok->type == TOKEN_NEWLINE))
+    while ((tok = consume_token(lexer))
+           && (tok->type == TOKEN_SEMICOLON || tok->type == TOKEN_NEWLINE))
     {
         if ((tok = consume_token(lexer)) && tok->type == TOKEN_EOF)
         {
@@ -105,7 +113,8 @@ static struct ast *parse_command_list(struct lexer *lexer, enum parser_status *s
             return NULL;
         }
 
-        root->children = realloc(root->children, sizeof(struct ast *) * (root->children_count + 1));
+        root->children = realloc(
+            root->children, sizeof(struct ast *) * (root->children_count + 1));
         root->children[root->children_count++] = next_command;
     }
 

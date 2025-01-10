@@ -12,4 +12,3 @@ void set_verbose_mode(int enabled);
 void verbose_log(const char *message);
 
 #endif /* !UTILS_H */
-
