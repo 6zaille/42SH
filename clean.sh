@@ -15,7 +15,9 @@ for dir in src/execution src/lexer src/parser src/utils; do
     echo "Suppression dans le dossier : $dir"
     rm -rf $dir/.deps $dir/Makefile.in $dir/Makefile $dir/*.o $dir/*.a
 done
-
+rm config.status;
+rm -rf src/.deps;
+rm configure~;  
 rm src/Makefile.in src/Makefile;
 # Suppression du binaire et des fichiers intermédiaires principaux
 rm -f src/42sh 42sh-main.o;
