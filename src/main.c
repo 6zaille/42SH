@@ -60,6 +60,8 @@ ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
     return (ssize_t)pos;
 }
 
+
+//too long function 
 int main(int argc, char **argv)
 {
     int pretty_print = 0;
