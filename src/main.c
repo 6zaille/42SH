@@ -9,6 +9,59 @@
 #include "parser/parser.h"
 #include "utils/utils.h"
 
+// Implémentation personnalisée de getline
+ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
+{
+    if (!lineptr || !n || !stream)
+    {
+        return -1;
+    }
+
+    if (*lineptr == NULL || *n == 0)
+    {
+        *n = 128; // Taille initiale par défaut
+        *lineptr = malloc(*n);
+        if (*lineptr == NULL)
+        {
+            return -1;
+        }
+    }
+
+    size_t pos = 0;
+    int c;
+
+    while ((c = fgetc(stream)) != EOF)
+    {
+        if (pos + 1 >= *n)
+        {
+            *n *= 2; // Augmenter la taille de la ligne
+            char *new_ptr = realloc(*lineptr, *n);
+            if (!new_ptr)
+            {
+                return -1;
+            }
+            *lineptr = new_ptr;
+        }
+
+        (*lineptr)[pos++] = c;
+
+        if (c == '\n')
+        {
+            break;
+        }
+    }
+
+    if (pos == 0 && c == EOF)
+    {
+        return -1;
+    }
+
+    (*lineptr)[pos] = '\0';
+    return (ssize_t)pos;
+}
+
+
+
 int main(int argc, char **argv)
 {
     int pretty_print = 0;
