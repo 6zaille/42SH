@@ -23,5 +23,11 @@ rm configure~;
 rm src/Makefile.in src/Makefile;
 rm test_script.sh;
 # Suppression du binaire et des fichiers intermédiaires principaux
-rm -f src/42sh 42sh-main.o;
+rm -rf src/42sh 
+rm -rf src/42sh-main.o;
+rm tests/Makefile.in;
+rm tests/Makefile;
+rm test-driver;
 rm clean;
+clear;
+echo "XingXing a mangé tout les trash file";
