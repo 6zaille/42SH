@@ -21,6 +21,7 @@ rm config.status;
 rm -rf src/.deps;
 rm configure~;  
 rm src/Makefile.in src/Makefile;
+rm test_script.sh;
 # Suppression du binaire et des fichiers intermédiaires principaux
 rm -f src/42sh 42sh-main.o;
 rm clean;

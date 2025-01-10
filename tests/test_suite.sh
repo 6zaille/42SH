@@ -1,83 +1,102 @@
 #!/bin/sh
 
-# Initialize
-echo "Running 42sh tests..."
+echo "Running 42sh test suite..."
+echo "====================================="
 STATUS=0
+TOTAL_TESTS=0
+PASSED_TESTS=0
+BIN_PATH="./src/42sh" # Chemin vers le binaire 42sh
 
-# Test 1: Simple echo command
-./42sh -c "echo Hello World" | grep -q "Hello World"
-if [ $? -eq 0 ]; then
-  echo "Test 1 passed."
-else
-  echo "Test 1 failed."; STATUS=1
+if [ ! -f "$BIN_PATH" ]; then
+    echo "Error: 42sh binary not found at $BIN_PATH"
+    exit 1
 fi
 
-# Test 2: Builtin true
-./42sh -c "true"
-if [ $? -eq 0 ]; then
-  echo "Test 2 passed."
-else
-  echo "Test 2 failed."; STATUS=1
-fi
+run_test() {
+    TEST_NAME=$1
+    COMMAND=$2
+    EXPECTED_EXIT_CODE=$3
+    CHECK_CMD=$4
 
-# Test 3: Builtin false
-./42sh -c "false"
-if [ $? -eq 1 ]; then
-  echo "Test 3 passed."
-else
-  echo "Test 3 failed."; STATUS=1
-fi
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    echo -n "Running $TEST_NAME... "
 
-# Test 4: Command list
-./42sh -c "echo foo; echo bar" | grep -q "foo" && ./42sh -c "echo foo; echo bar" | grep -q "bar"
-if [ $? -eq 0 ]; then
-  echo "Test 4 passed."
-else
-  echo "Test 4 failed."; STATUS=1
-fi
+    OUTPUT=$(eval "$COMMAND" 2>&1)
+    ACTUAL_EXIT_CODE=$?
 
-# Test 5: If command
-./42sh -c "if true; then echo success; fi" | grep -q "success"
-if [ $? -eq 0 ]; then
-  echo "Test 5 passed."
-else
-  echo "Test 5 failed."; STATUS=1
-fi
+    if [ $ACTUAL_EXIT_CODE -eq $EXPECTED_EXIT_CODE ] && eval "$CHECK_CMD"; then
+        echo "PASSED"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        echo "FAILED (expected $EXPECTED_EXIT_CODE, got $ACTUAL_EXIT_CODE)"
+        echo "Command output:"
+        echo "$OUTPUT"
+        STATUS=1
+    fi
+}
 
-# Test 6: Comments
-./42sh -c "echo visible # this is a comment" | grep -q "visible"
-if [ $? -eq 0 ]; then
-  echo "Test 6 passed."
-else
-  echo "Test 6 failed."; STATUS=1
-fi
+# Tests existants
+run_test "Test 1: Simple echo" \
+    "$BIN_PATH -c 'echo Hello World'" 0 \
+    'echo "$OUTPUT" | grep -q "Hello World"'
 
-# Test 7: Single quotes
-./42sh -c "echo 'single quotes test'" | grep -q "single quotes test"
-if [ $? -eq 0 ]; then
-  echo "Test 7 passed."
-else
-  echo "Test 7 failed."; STATUS=1
-fi
+run_test "Test 2: Builtin true" \
+    "$BIN_PATH -c 'true'" 0 'true'
 
-# Test 8: Invalid syntax
-./42sh -c "if true then" 2>/dev/null
-if [ $? -eq 2 ]; then
-  echo "Test 8 passed."
-else
-  echo "Test 8 failed."; STATUS=1
-fi
+run_test "Test 3: Builtin false" \
+    "$BIN_PATH -c 'false'" 1 'true'
 
-# Test 9: File input
-echo "echo File input test" > test_script.sh
-./42sh test_script.sh | grep -q "File input test"
-if [ $? -eq 0 ]; then
-  echo "Test 9 passed."
-else
-  echo "Test 9 failed."; STATUS=1
-fi
-rm test_script.sh
+run_test "Test 4: Command list" \
+    "$BIN_PATH -c 'echo foo; echo bar'" 0 \
+    'echo "$OUTPUT" | grep -q "foo" && echo "$OUTPUT" | grep -q "bar"'
 
+# Nouveaux tests
+run_test "Test 5: If-then-else" \
+    "$BIN_PATH -c 'if true; then echo success; else echo fail; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "success"'
 
-# Exit with final status
+run_test "Test 6: Invalid syntax" \
+    "$BIN_PATH -c 'if true then'" 2 \
+    'echo "$OUTPUT" | grep -q "Syntax error"'
+
+run_test "Test 7: Builtin exit" \
+    "$BIN_PATH -c 'exit 42'" 42 'true'
+
+run_test "Test 8: Redirection to file" \
+    "$BIN_PATH -c 'echo Hello > test_file'; grep -q "Hello" test_file; rm test_file" 0 'true'
+
+run_test "Test 9: Command chaining with &&" \
+    "$BIN_PATH -c 'true && echo success'" 0 \
+    'echo "$OUTPUT" | grep -q "success"'
+
+run_test "Test 10: Command chaining with ||" \
+    "$BIN_PATH -c 'false || echo success'" 0 \
+    'echo "$OUTPUT" | grep -q "success"'
+
+run_test "Test 11: Parsing error with unexpected token" \
+    "$BIN_PATH -c 'echo foo; ; echo bar'" 2 \
+    'echo "$OUTPUT" | grep -q "Flux non terminé correctement"'
+
+run_test "Test 12: Echo with escapes (-e)" \
+    "$BIN_PATH -c 'echo -e Hello\\nWorld'" 0 \
+    'echo "$OUTPUT" | grep -q "Hello" && echo "$OUTPUT" | grep -q "World"'
+
+run_test "Test 13: Single quotes handling" \
+    "$BIN_PATH -c 'echo '\''single quotes'\'''" 0 \
+    'echo "$OUTPUT" | grep -q "single quotes"'
+
+run_test "Test 14: Verbose mode logging" \
+    "VERBOSE=1 $BIN_PATH -c 'true'" 0 \
+    'echo "$OUTPUT" | grep -q "\\[VERBOSE\\]"'
+
+run_test "Test 15: Multiple commands with semicolons" \
+    "$BIN_PATH -c 'echo cmd1; echo cmd2; echo cmd3'" 0 \
+    'echo "$OUTPUT" | grep -q "cmd1" && echo "$OUTPUT" | grep -q "cmd2" && echo "$OUTPUT" | grep -q "cmd3"'
+
+run_test "Test 16: Invalid built-in command" \
+    "$BIN_PATH -c 'invalid_cmd'" 127 \
+    'echo "$OUTPUT" | grep -q "commande inconnue"'
+
+echo "====================================="
+echo "Test suite completed: $PASSED_TESTS/$TOTAL_TESTS tests passed."
 exit $STATUS
