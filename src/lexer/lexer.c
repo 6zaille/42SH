@@ -94,73 +94,73 @@ void lexer_destroy(struct lexer *lexer)
 
 struct token *lexer_next_token(struct lexer *lexer)
 {
-    skip_whitespace(lexer); // Skip any whitespace characters
+    skip_whitespace(lexer);
 
-    if (lexer->input[lexer->pos] == '\0') // Check for end of input
+    if (lexer->input[lexer->pos] == '\0')
     {
-        return create_token(TOKEN_EOF, NULL); // Return end of file token
+        return create_token(TOKEN_EOF, NULL);
     }
 
-    char c = lexer->input[lexer->pos]; // Get the current character
-    if (c == '\'') // Handle single quote
+    char c = lexer->input[lexer->pos];
+    if (c == '\'')
     {
-        if (is_surrounded_by_letters(lexer, lexer->pos)) // Check if single quote is surrounded by letters
+        if (is_surrounded_by_letters(lexer, lexer->pos))
         {
             lexer->pos++; // Ignore this single quote
-            return lexer_next_token(lexer); // Continue to the next token
+            return lexer_next_token(lexer);
         }
-        return create_token(TOKEN_SINGLE_QUOTE, NULL); // Return single quote token
+        return create_token(TOKEN_SINGLE_QUOTE, NULL);
     }
-    else if (c == '\\') // Handle backslash
+    else if (c == '\\')
     {
         lexer->pos++;
-        if (lexer->input[lexer->pos] == 'n') // Check for newline escape sequence
+        if (lexer->input[lexer->pos] == 'n')
         {
             lexer->pos++;
-            return create_token(TOKEN_NEWLINE, NULL); // Return newline token
+            return create_token(TOKEN_NEWLINE, NULL);
         }
     }
-    else if (c == '\n') // Handle newline
+    else if (c == '\n')
     {
         lexer->pos++;
-        return create_token(TOKEN_NEWLINE, NULL); // Return newline token
+        return create_token(TOKEN_NEWLINE, NULL);
     }
-    else if (c == ';') // Handle semicolon
+    else if (c == ';')
     {
         lexer->pos++;
-        return create_token(TOKEN_SEMICOLON, NULL); // Return semicolon token
+        return create_token(TOKEN_SEMICOLON, NULL);
     }
-    else // Handle other characters
+    else
     {
-        size_t start = lexer->pos; // Mark the start of the token
+        size_t start = lexer->pos;
         while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos])
                && lexer->input[lexer->pos] != ';'
                && lexer->input[lexer->pos] != '\''
                && lexer->input[lexer->pos] != '\\'
-               && lexer->input[lexer->pos] != '\n') // Continue until a delimiter is found
+               && lexer->input[lexer->pos] != '\n')
         {
             lexer->pos++;
         }
 
-        size_t len = lexer->pos - start; // Calculate the length of the token
-        char *value = strndup(lexer->input + start, len); // Duplicate the token string
-        enum token_type type = check_keyword(value); // Check if the token is a keyword
+        size_t len = lexer->pos - start;
+        char *value = strndup(lexer->input + start, len);
+        enum token_type type = check_keyword(value);
         struct token *tok;
 
-        if (type != TOKEN_WORD) // If it's a keyword
+        if (type != TOKEN_WORD)
         {
-            tok = create_token(type, NULL); // Create a keyword token
+            tok = create_token(type, NULL);
         }
-        else // If it's a regular word
+        else
         {
-            tok = create_token(TOKEN_WORD, value); // Create a word token
+            tok = create_token(TOKEN_WORD, value);
         }
 
-        free(value); // Free the duplicated string
-        return tok; // Return the created token
+        free(value);
+        return tok;
     }
 
-    return create_token(TOKEN_ERROR, "Unexpected character"); // Return an error token for unexpected characters
+    return create_token(TOKEN_ERROR, "Unexpected character");
 }
 
 void token_free(struct token *token)

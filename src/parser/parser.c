@@ -41,6 +41,7 @@ static struct ast *parse_simple_command(struct lexer *lexer,
     if (!tok || tok->type != TOKEN_WORD)
     {
         *status = PARSER_ERROR;
+        //token_free(tok);
         ast_free(command_node);
         return NULL;
     }
@@ -69,6 +70,7 @@ static struct ast *parse_simple_command(struct lexer *lexer,
         current_parent->children[current_parent->children_count++] = arg_node;
         current_parent = arg_node;
     }
+    token_free(tok);
 
     return command_node;
 }
@@ -117,7 +119,7 @@ static struct ast *parse_command_list(struct lexer *lexer,
             root->children, sizeof(struct ast *) * (root->children_count + 1));
         root->children[root->children_count++] = next_command;
     }
-
+    token_free(tok);
     return root;
 }
 
@@ -138,6 +140,7 @@ struct ast *parser_parse(struct lexer *lexer, enum parser_status *status)
         *status = PARSER_ERROR;
         fprintf(stderr, "Erreur: Flux non terminé correctement.\n");
     }
+    token_free(tok);
 
     return root;
 }
