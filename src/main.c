@@ -60,60 +60,20 @@ ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
     return (ssize_t)pos;
 }
 
-
-
 int main(int argc, char **argv)
 {
+    FILE *input_file = stdin; // Par défaut, lire depuis stdin
     int pretty_print = 0;
-    char *command = NULL;
-    FILE *input_file = NULL;
 
-    if (argc == 1)
+    if (argc > 1 && strcmp(argv[1], "-c") == 0)
     {
-        exit(0);
-    }
-
-    for (int i = 1; i < argc; i++)
-    {
-        if (strcmp(argv[i], "-c") == 0)
+        if (argc < 3)
         {
-            if (i + 1 >= argc)
-            {
-                fprintf(stderr, "Error: Missing argument for -c\n");
-                fprintf(stderr, "Usage: 42sh [-c COMMAND | -e FILE] [OPTIONS...]\n");
-                return 2;
-            }
-            command = argv[++i];
-        }
-        else if (strcmp(argv[i], "-e") == 0)
-        {
-            if (i + 1 >= argc)
-            {
-                fprintf(stderr, "Error: Missing argument for -e\n");
-                fprintf(stderr, "Usage: 42sh [-c COMMAND | -e FILE] [OPTIONS...]\n");
-                return 2;
-            }
-            input_file = fopen(argv[++i], "r");
-            if (!input_file)
-            {
-                perror("Error opening file");
-                return 2;
-            }
-        }
-        else if (strcmp(argv[i], "--pretty-print") == 0)
-        {
-            pretty_print = 1;
-        }
-        else
-        {
-            fprintf(stderr, "Error: Unexpected argument %s\n", argv[i]);
-            fprintf(stderr, "Usage: 42sh [-c COMMAND | -e FILE] [OPTIONS...]\n");
+            fprintf(stderr, "Error: Missing argument for -c\n");
+            fprintf(stderr, "Usage: 42sh [-c COMMAND] [SCRIPT] [OPTIONS...]\n");
             return 2;
         }
-    }
-
-    if (command)
-    {
+        char *command = argv[2];
         struct lexer *lexer = lexer_init(command);
         if (!lexer)
         {
@@ -141,47 +101,54 @@ int main(int argc, char **argv)
         }
 
         ast_free(ast);
+        return 0;
     }
-    else if (input_file)
+    else if (argc > 1)
     {
-        char *line = NULL;
-        size_t len = 0;
-        while (custom_getline(&line, &len, input_file) != -1)
+        input_file = fopen(argv[1], "r");
+        if (!input_file)
         {
-            struct lexer *lexer = lexer_init(line);
-            if (!lexer)
-            {
-                fprintf(stderr, "Failed to initialize lexer\n");
-                free(line);
-                fclose(input_file);
-                return 2;
-            }
-
-            enum parser_status status;
-            struct ast *ast = parser_parse(lexer, &status);
-            lexer_destroy(lexer);
-
-            if (status != PARSER_OK)
-            {
-                fprintf(stderr, "Syntax error\n");
-                free(line);
-                fclose(input_file);
-                return 2;
-            }
-
-            if (pretty_print)
-            {
-                print_arbre(ast, 0);
-            }
-            else
-            {
-                eval_ast(ast);
-            }
-
-            ast_free(ast);
+            perror("Error opening file");
+            return 2;
         }
-        free(line);
-        fclose(input_file);
     }
-    exit(0);
+
+    // Lecture depuis le fichier (ou stdin si aucun fichier n'est passé)
+    char *line = NULL;
+    size_t len = 0;
+
+    while (custom_getline(&line, &len, input_file) != -1)
+    {
+        struct lexer *lexer = lexer_init(line);
+        if (!lexer)
+        {
+            fprintf(stderr, "Failed to initialize lexer\n");
+            free(line);
+            if (input_file != stdin)
+                fclose(input_file);
+            return 2;
+        }
+
+        enum parser_status status;
+        struct ast *ast = parser_parse(lexer, &status);
+        lexer_destroy(lexer);
+
+        if (status != PARSER_OK)
+        {
+            fprintf(stderr, "Syntax error\n");
+            free(line);
+            if (input_file != stdin)
+                fclose(input_file);
+            return 2;
+        }
+
+        eval_ast(ast);
+        ast_free(ast);
+    }
+
+    free(line);
+    if (input_file != stdin)
+        fclose(input_file);
+
+    return 0;
 }
