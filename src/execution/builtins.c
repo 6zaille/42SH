@@ -4,29 +4,50 @@
 #include <stdlib.h>
 #include <string.h>
 
-int builtin_echo(int argc, char **argv)
-{
+int builtin_echo(int argc, char **argv) {
     int newline = 1;
-    int start = 1;
+    int interpret_escapes = 0;
+    int i = 1;
 
-    if (argc > 1 && strcmp(argv[1], "-n") == 0)
-    {
-        newline = 0;
-        start = 2;
+    while (i < argc && argv[i][0] == '-') {
+        if (strcmp(argv[i], "-n") == 0)
+            newline = 0;
+        else if (strcmp(argv[i], "-e") == 0)
+            interpret_escapes = 1;
+        else if (strcmp(argv[i], "-E") == 0)
+            interpret_escapes = 0;
+        else
+            break;
+        i++;
     }
 
-    for (int i = start; i < argc; i++)
-    {
-        printf("%s", argv[i]);
-        if (i < argc - 1)
-        {
-            printf(" ");
+    for (; i < argc; i++) {
+        if (interpret_escapes) {
+            for (char *p = argv[i]; *p; p++) {
+                if (*p == '\\') {
+                    p++;
+                    switch (*p) {
+                        case 'n': putchar('\n'); break;
+                        case 't': putchar('\t'); break;
+                        case '\\': putchar('\\'); break;
+                        default: putchar('\\'); putchar(*p); break;
+                    }
+                } else {
+                    putchar(*p);
+                }
+            }
+        } else {
+            printf("%s", argv[i]);
         }
+
+        if (i < argc - 1)
+            putchar(' ');
     }
+
     if (newline)
-    {
-        printf("\n");
-    }
+        putchar('\n');
+
+    fflush(stdout);
     return 0;
 }
 
