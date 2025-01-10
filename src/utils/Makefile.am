@@ -1,6 +1,5 @@
 lib_LIBRARIES = libutils.a
 
-libparser_a_LIBADD = ../execution/libexecution.a
 
 libutils_a_SOURCES = utils.c utils.h
 
