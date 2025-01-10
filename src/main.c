@@ -9,59 +9,6 @@
 #include "parser/parser.h"
 #include "utils/utils.h"
 
-// Implémentation personnalisée de getline
-ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
-{
-    if (!lineptr || !n || !stream)
-    {
-        return -1;
-    }
-
-    if (*lineptr == NULL || *n == 0)
-    {
-        *n = 128; // Taille initiale par défaut
-        *lineptr = malloc(*n);
-        if (*lineptr == NULL)
-        {
-            return -1;
-        }
-    }
-
-    size_t pos = 0;
-    int c;
-
-    while ((c = fgetc(stream)) != EOF)
-    {
-        if (pos + 1 >= *n)
-        {
-            *n *= 2; // Augmenter la taille de la ligne
-            char *new_ptr = realloc(*lineptr, *n);
-            if (!new_ptr)
-            {
-                return -1;
-            }
-            *lineptr = new_ptr;
-        }
-
-        (*lineptr)[pos++] = c;
-
-        if (c == '\n')
-        {
-            break;
-        }
-    }
-
-    if (pos == 0 && c == EOF)
-    {
-        return -1;
-    }
-
-    (*lineptr)[pos] = '\0';
-    return (ssize_t)pos;
-}
-
-
-//too long function 
 int main(int argc, char **argv)
 {
     int pretty_print = 0;
@@ -80,24 +27,34 @@ int main(int argc, char **argv)
             if (i + 1 >= argc)
             {
                 fprintf(stderr, "Error: Missing argument for -c\n");
-                fprintf(stderr,
-                        "Usage: 42sh [-c COMMAND] [FILE] [ARGUMENTS...]\n");
+                fprintf(stderr, "Usage: 42sh [-c COMMAND | -e FILE] [OPTIONS...]\n");
                 return 2;
             }
             command = argv[++i];
+        }
+        else if (strcmp(argv[i], "-e") == 0)
+        {
+            if (i + 1 >= argc)
+            {
+                fprintf(stderr, "Error: Missing argument for -e\n");
+                fprintf(stderr, "Usage: 42sh [-c COMMAND | -e FILE] [OPTIONS...]\n");
+                return 2;
+            }
+            input_file = fopen(argv[++i], "r");
+            if (!input_file)
+            {
+                perror("Error opening file");
+                return 2;
+            }
         }
         else if (strcmp(argv[i], "--pretty-print") == 0)
         {
             pretty_print = 1;
         }
-        else if (!input_file && command == NULL)
-        {
-            command = argv[i];
-        }
         else
         {
             fprintf(stderr, "Error: Unexpected argument %s\n", argv[i]);
-            fprintf(stderr, "Usage: 42sh [-c COMMAND] [FILE] [ARGUMENTS...]\n");
+            fprintf(stderr, "Usage: 42sh [-c COMMAND | -e FILE] [OPTIONS...]\n");
             return 2;
         }
     }
@@ -136,7 +93,7 @@ int main(int argc, char **argv)
     {
         char *line = NULL;
         size_t len = 0;
-        if (custom_getline(&line, &len, input_file) != -1)
+        while (custom_getline(&line, &len, input_file) != -1)
         {
             struct lexer *lexer = lexer_init(line);
             if (!lexer)
