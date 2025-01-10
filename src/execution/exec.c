@@ -33,7 +33,7 @@ int execute_builtin(int argc, char **argv)
         return builtin_exit(argc, argv);
     }
 
-    return -1; // Indique que ce n'est pas un builtin.
+    return -1; //Indique que ce n'est pas un builtin.
 }
 
 int execute_command(int argc, char **argv)
