@@ -6,14 +6,10 @@
 #include "../lexer/lexer.h"
 #include "../lexer/token.h"
 #include "ast.h"
-
-static struct token *consume_token(struct lexer *lexer)
-{
+static struct token *consume_token(struct lexer *lexer) {
     struct token *tok = lexer_next_token(lexer);
-    if (!tok)
-    {
+    if (!tok) {
         fprintf(stderr, "Erreur: Impossible de consommer un token.\n");
-        return NULL;
     }
     return tok;
 }
@@ -41,7 +37,7 @@ static struct ast *parse_simple_command(struct lexer *lexer,
     if (!tok || tok->type != TOKEN_WORD)
     {
         *status = PARSER_ERROR;
-        //token_free(tok);
+        token_free(tok);
         ast_free(command_node);
         return NULL;
     }
