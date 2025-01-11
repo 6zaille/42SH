@@ -5,7 +5,7 @@ echo "====================================="
 STATUS=0
 TOTAL_TESTS=0
 PASSED_TESTS=0
-BIN_PATH="./src/42sh" # Chemin vers le binaire 42sh
+BIN_PATH="./src/42sh"
 
 if [ ! -f "$BIN_PATH" ]; then
     echo "Error: 42sh binary not found at $BIN_PATH"
