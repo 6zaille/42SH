@@ -9,23 +9,9 @@
 #include "parser/parser.h"
 #include "utils/utils.h"
 
-ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
+
+ssize_t custom_getline_read(char **lineptr, size_t *n, FILE *stream)
 {
-    if (!lineptr || !n || !stream)
-    {
-        return -1;
-    }
-
-    if (*lineptr == NULL || *n == 0)
-    {
-        *n = 128;
-        *lineptr = malloc(*n);
-        if (*lineptr == NULL)
-        {
-            return -1;
-        }
-    }
-
     size_t pos = 0;
     int c;
 
@@ -59,58 +45,62 @@ ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
     return (ssize_t)pos;
 }
 
-int main(int argc, char **argv)
+ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
 {
-    FILE *input_file = stdin;
-    int pretty_print = 0;
-
-    if (argc > 1 && strcmp(argv[1], "-c") == 0)
+    if (!lineptr || !n || !stream)
     {
-        if (argc < 3)
-        {
-            fprintf(stderr, "Error: Missing argument for -c\n");
-            fprintf(stderr, "Usage: 42sh [-c COMMAND] [SCRIPT] [OPTIONS...]\n");
-            return 2;
-        }
-        char *command = argv[2];
-        struct lexer *lexer = lexer_init(command);
-        if (!lexer)
-        {
-            fprintf(stderr, "Failed to initialize lexer\n");
-            return 2;
-        }
-
-        enum parser_status status;
-        struct ast *ast = parser_parse(lexer, &status);
-        lexer_destroy(lexer);
-
-        if (status != PARSER_OK)
-        {
-            fprintf(stderr, "Syntax error\n");
-            return 2;
-        }
-
-        if (pretty_print)
-        {
-            print_arbre(ast, 0);
-        }
-        else
-        {
-            eval_ast(ast);
-        }
-
-        ast_free(ast);
-        return 0;
+        return -1;
     }
-    else if (argc > 1)
+
+    if (*lineptr == NULL || *n == 0)
     {
-        input_file = fopen(argv[1], "r");
-        if (!input_file)
+        *n = 128;
+        *lineptr = malloc(*n);
+        if (*lineptr == NULL)
         {
-            perror("Error opening file");
-            return 2;
+            return -1;
         }
     }
+
+    return custom_getline_read(lineptr, n, stream);
+}
+
+
+
+int handle_command(char *command, int pretty_print)
+{
+    struct lexer *lexer = lexer_init(command);
+    if (!lexer)
+    {
+        fprintf(stderr, "Failed to initialize lexer\n");
+        return 2;
+    }
+
+    enum parser_status status;
+    struct ast *ast = parser_parse(lexer, &status);
+    lexer_destroy(lexer);
+
+    if (status != PARSER_OK)
+    {
+        fprintf(stderr, "Syntax error\n");
+        return 2;
+    }
+
+    if (pretty_print)
+    {
+        print_arbre(ast, 0);
+    }
+    else
+    {
+        eval_ast(ast);
+    }
+
+    ast_free(ast);
+    return 0;
+}
+
+int handle_file(FILE *input_file)
+{
     char *line = NULL;
     size_t len = 0;
 
@@ -148,4 +138,32 @@ int main(int argc, char **argv)
         fclose(input_file);
 
     return 0;
+}
+
+int main(int argc, char **argv)
+{
+    FILE *input_file = stdin;
+    int pretty_print = 0;
+
+    if (argc > 1 && strcmp(argv[1], "-c") == 0)
+    {
+        if (argc < 3)
+        {
+            fprintf(stderr, "Error: Missing argument for -c\n");
+            fprintf(stderr, "Usage: 42sh [-c COMMAND] [SCRIPT] [OPTIONS...]\n");
+            return 2;
+        }
+        return handle_command(argv[2], pretty_print);
+    }
+    else if (argc > 1)
+    {
+        input_file = fopen(argv[1], "r");
+        if (!input_file)
+        {
+            perror("Error opening file");
+            return 2;
+        }
+    }
+
+    return handle_file(input_file);
 }
