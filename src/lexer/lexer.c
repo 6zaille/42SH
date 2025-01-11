@@ -106,7 +106,7 @@ struct token *lexer_next_token(struct lexer *lexer)
     {
         if (is_surrounded_by_letters(lexer, lexer->pos))
         {
-            lexer->pos++; // Ignore this single quote
+            lexer->pos++;
             return lexer_next_token(lexer);
         }
         return create_token(TOKEN_SINGLE_QUOTE, NULL);
