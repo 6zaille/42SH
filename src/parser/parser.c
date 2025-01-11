@@ -1,6 +1,8 @@
 #include "parser.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "../lexer/lexer.h"
 #include "../lexer/token.h"
 #include "ast.h"
@@ -70,8 +72,8 @@ static struct ast *parse_simple_command(struct lexer *lexer,
     return command_node;
 }*/
 
-
-static struct ast *parse_command_list(struct lexer *lexer, enum parser_status *status)
+static struct ast *parse_command_list(struct lexer *lexer,
+                                      enum parser_status *status)
 {
     struct ast *root = ast_new();
     if (!root)
@@ -114,14 +116,20 @@ static struct ast *parse_command_list(struct lexer *lexer, enum parser_status *s
             {
                 // Si aucune commande actuelle, c'est une nouvelle commande
                 current_command = child;
-                root->children = realloc(root->children, sizeof(struct ast *) * (root->children_count + 1));
+                root->children =
+                    realloc(root->children,
+                            sizeof(struct ast *) * (root->children_count + 1));
                 root->children[root->children_count++] = current_command;
             }
             else
             {
                 // Sinon, c'est un argument de la commande actuelle
-                current_command->children = realloc(current_command->children, sizeof(struct ast *) * (current_command->children_count + 1));
-                current_command->children[current_command->children_count++] = child;
+                current_command->children =
+                    realloc(current_command->children,
+                            sizeof(struct ast *)
+                                * (current_command->children_count + 1));
+                current_command->children[current_command->children_count++] =
+                    child;
             }
 
             continue;
@@ -129,7 +137,8 @@ static struct ast *parse_command_list(struct lexer *lexer, enum parser_status *s
 
         if (tok->type == TOKEN_SEMICOLON)
         {
-            // Si un point-virgule est rencontré, réinitialiser la commande courante
+            // Si un point-virgule est rencontré, réinitialiser la commande
+            // courante
             token_free(tok);
             current_command = NULL;
             continue;
@@ -144,8 +153,6 @@ static struct ast *parse_command_list(struct lexer *lexer, enum parser_status *s
 
     return root;
 }
-
-
 
 struct ast *parser_parse(struct lexer *lexer, enum parser_status *status)
 {

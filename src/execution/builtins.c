@@ -4,12 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-int builtin_echo(int argc, char **argv) {
+int builtin_echo(int argc, char **argv)
+{
     int newline = 1;
     int interpret_escapes = 0;
     int i = 1;
 
-    while (i < argc && argv[i][0] == '-') {
+    while (i < argc && argv[i][0] == '-')
+    {
         if (strcmp(argv[i], "-n") == 0)
             newline = 0;
         else if (strcmp(argv[i], "-e") == 0)
@@ -21,22 +23,40 @@ int builtin_echo(int argc, char **argv) {
         i++;
     }
 
-    for (; i < argc; i++) {
-        if (interpret_escapes) {
-            for (char *p = argv[i]; *p; p++) {
-                if (*p == '\\') {
+    for (; i < argc; i++)
+    {
+        if (interpret_escapes)
+        {
+            for (char *p = argv[i]; *p; p++)
+            {
+                if (*p == '\\')
+                {
                     p++;
-                    switch (*p) {
-                        case 'n': putchar('\n'); break;
-                        case 't': putchar('\t'); break;
-                        case '\\': putchar('\\'); break;
-                        default: putchar('\\'); putchar(*p); break;
+                    switch (*p)
+                    {
+                    case 'n':
+                        putchar('\n');
+                        break;
+                    case 't':
+                        putchar('\t');
+                        break;
+                    case '\\':
+                        putchar('\\');
+                        break;
+                    default:
+                        putchar('\\');
+                        putchar(*p);
+                        break;
                     }
-                } else {
+                }
+                else
+                {
                     putchar(*p);
                 }
             }
-        } else {
+        }
+        else
+        {
             printf("%s", argv[i]);
         }
 
