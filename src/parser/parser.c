@@ -26,6 +26,7 @@ parser_status *status)
 static struct ast *parse_simple_command(struct lexer *lexer,
                                         enum parser_status *status)
 {
+    // Create a new AST node for the command
     struct ast *command_node = ast_new();
     if (!command_node)
     {
@@ -33,6 +34,7 @@ static struct ast *parse_simple_command(struct lexer *lexer,
         return NULL;
     }
 
+    // Consume the next token from the lexer
     struct token *tok = consume_token(lexer);
     if (!tok || tok->type != TOKEN_WORD)
     {
@@ -42,12 +44,14 @@ static struct ast *parse_simple_command(struct lexer *lexer,
         return NULL;
     }
 
+    // Assign the token to the command node
     command_node->token = *tok;
     command_node->children = NULL;
     command_node->children_count = 0;
 
     struct ast *current_parent = command_node;
 
+    // Loop to consume tokens and create argument nodes
     while ((tok = consume_token(lexer)) && tok->type == TOKEN_WORD)
     {
         struct ast *arg_node = ast_new();
@@ -58,8 +62,10 @@ static struct ast *parse_simple_command(struct lexer *lexer,
             return NULL;
         }
 
+        // Assign the token to the argument node
         arg_node->token = *tok;
 
+        // Add the argument node to the children of the current parent node
         current_parent->children = realloc(
             current_parent->children,
             sizeof(struct ast *) * (current_parent->children_count + 1));
