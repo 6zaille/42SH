@@ -9,7 +9,6 @@
 #include "parser/parser.h"
 #include "utils/utils.h"
 
-// Implémentation personnalisée de getline
 ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
 {
     if (!lineptr || !n || !stream)
@@ -19,7 +18,7 @@ ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
 
     if (*lineptr == NULL || *n == 0)
     {
-        *n = 128; // Taille initiale par défaut
+        *n = 128;
         *lineptr = malloc(*n);
         if (*lineptr == NULL)
         {
@@ -34,7 +33,7 @@ ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
     {
         if (pos + 1 >= *n)
         {
-            *n *= 2; // Augmenter la taille de la ligne
+            *n *= 2;
             char *new_ptr = realloc(*lineptr, *n);
             if (!new_ptr)
             {
@@ -62,7 +61,7 @@ ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
 
 int main(int argc, char **argv)
 {
-    FILE *input_file = stdin; // Par défaut, lire depuis stdin
+    FILE *input_file = stdin;
     int pretty_print = 0;
 
     if (argc > 1 && strcmp(argv[1], "-c") == 0)
@@ -112,8 +111,6 @@ int main(int argc, char **argv)
             return 2;
         }
     }
-
-    // Lecture depuis le fichier (ou stdin si aucun fichier n'est passé)
     char *line = NULL;
     size_t len = 0;
 

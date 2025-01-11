@@ -71,5 +71,5 @@ int builtin_exit(int argc, char **argv)
     }
 
     exit(exit_code);
-    return 0; // Jamais atteint mais pour M-CM-)viter des warnings.
+    return 0; // Jamais atteint mais pour eviter des warnings.
 }

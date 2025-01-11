@@ -1,16 +1,12 @@
 #!/bin/bash
 
-# Assurez-vous que le script s'exécute depuis son répertoire
 cd "$(dirname "$0")"
 
-# Nettoyage des fichiers générés par make
 make clean;
 
-# Suppression des fichiers générés par autotools
 rm -rf autom4te.cache aclocal.m4 ar-lib compile config.log configure depcomp \
        install-sh missing Makefile.in Makefile;
 
-# Suppression des artefacts spécifiques dans chaque module
 for dir in src/execution src/lexer src/parser src/utils; do
     echo "Suppression dans le dossier : $dir"
     rm -rf $dir/.deps $dir/Makefile.in $dir/Makefile $dir/*.o $dir/*.a
@@ -22,7 +18,6 @@ rm -rf src/.deps;
 rm configure~;  
 rm src/Makefile.in src/Makefile;
 rm test_script.sh;
-# Suppression du binaire et des fichiers intermédiaires principaux
 rm -rf src/42sh 
 rm -rf src/42sh-main.o;
 rm tests/Makefile.in;
