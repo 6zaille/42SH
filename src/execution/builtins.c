@@ -42,7 +42,8 @@ int builtin_echo(int argc, char **argv) {
     int interpret_escapes = 0;
     int i = 1;
 
-    while (i < argc && argv[i][0] == '-') {
+    while (i < argc && argv[i][0] == '-')
+    {
         if (strcmp(argv[i], "-n") == 0)
             newline = 0;
         else if (strcmp(argv[i], "-e") == 0)
