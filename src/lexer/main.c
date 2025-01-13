@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "lexer.h"
 #include "token.h"
 
@@ -49,7 +50,8 @@ void print_token(struct token *tok)
         break;
     }
 
-    printf("Token: { type: %s, value: %s }\n", type_str, tok->value ? tok->value : "NULL");
+    printf("Token: { type: %s, value: %s }\n", type_str,
+           tok->value ? tok->value : "NULL");
 }
 
 int main()
