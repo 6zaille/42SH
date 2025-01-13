@@ -93,7 +93,6 @@ static struct token *handle_word_token(struct lexer *lexer)
 
     while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos])
            && lexer->input[lexer->pos] != ';'
-           && lexer->input[lexer->pos] != '\\'
            && lexer->input[lexer->pos] != '\n')
     {
         if (lexer->input[lexer->pos] == '\''
