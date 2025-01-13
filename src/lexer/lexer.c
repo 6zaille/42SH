@@ -91,9 +91,10 @@ static struct token *handle_word_token(struct lexer *lexer)
     char *buffer = malloc(strlen(lexer->input) + 1);
     size_t buf_index = 0;
 
+    // CHANGEMENT ICI J'AI RETIRE LES CHECK POUR "//" POSSIBLE MODIFICATION DU
+    // COMPORTEMENT AVEC LES FICHIER TEXTE
     while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos])
            && lexer->input[lexer->pos] != ';'
-           && lexer->input[lexer->pos] != '\\'
            && lexer->input[lexer->pos] != '\n')
     {
         if (lexer->input[lexer->pos] == '\''

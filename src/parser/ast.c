@@ -4,7 +4,7 @@
 
 void ast_eval(struct ast *node)
 {
-    //ast_pretty_print(node, 0);
+    // ast_pretty_print(node, 0);
     if (!node)
     {
         return;
@@ -19,14 +19,6 @@ void ast_eval(struct ast *node)
         pid_t pid = fork();
         if (pid == 0)
         {
-            /*
-            int argc = 1;
-            while (data->args[argc] != NULL)
-            {
-                argc++;
-            }
-            printf("argc = %d\n", argc);
-            execute_command(argc, data->args);*/
             execvp(data->args[0], data->args);
             perror("execvp");
             exit(EXIT_FAILURE);
@@ -56,10 +48,12 @@ void ast_eval(struct ast *node)
             return;
 
         int condition_status = 1;
-        if (data->condition) {
+        if (data->condition)
+        {
             struct ast *current = data->condition;
 
-            while (current) {
+            while (current)
+            {
                 ast_eval(current);
                 condition_status = WEXITSTATUS(0);
 
@@ -70,15 +64,16 @@ void ast_eval(struct ast *node)
             }
         }
 
-        if (condition_status == 0 && data->then_branch) {
+        if (condition_status == 0 && data->then_branch)
+        {
             ast_eval(data->then_branch);
-        } else if (data->else_branch) {
+        }
+        else if (data->else_branch)
+        {
             ast_eval(data->else_branch);
         }
         break;
     }
-
-
     default:
         fprintf(stderr, "Unsupported AST node type: %d\n", node->type);
         break;
