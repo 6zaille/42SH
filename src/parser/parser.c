@@ -68,7 +68,8 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     return cmd_node;
 }
 
-static struct ast *parse_command_list(struct lexer *lexer) {
+static struct ast *parse_command_list(struct lexer *lexer)
+{
     struct ast *list_node = ast_create(AST_LIST);
     if (!list_node)
         return NULL;
@@ -76,29 +77,34 @@ static struct ast *parse_command_list(struct lexer *lexer) {
     struct ast **children = NULL;
     size_t count = 0;
 
-    while (1) {
+    while (1)
+    {
         struct token *tok = lexer_next_token(lexer);
-        if (!tok || tok->type == TOKEN_EOF) {
+        if (!tok || tok->type == TOKEN_EOF)
+        {
             token_free(tok);
             break;
         }
 
         lexer_push_back(lexer, tok);
         struct ast *cmd = parse_simple_command(lexer);
-        if (!cmd) {
+        if (!cmd)
+        {
             token_free(tok);
             break;
         }
 
         children = safe_realloc(children, sizeof(struct ast *) * (count + 1));
-        if (!children) {
+        if (!children)
+        {
             ast_free(cmd);
             break;
         }
         children[count++] = cmd;
 
         tok = lexer_next_token(lexer);
-        if (tok->type == TOKEN_SEMICOLON) {
+        if (tok->type == TOKEN_SEMICOLON)
+        {
             token_free(tok);
             continue;
         }
@@ -112,11 +118,11 @@ static struct ast *parse_command_list(struct lexer *lexer) {
     return list_node;
 }
 
-struct ast *parser_parse(struct lexer *lexer) {
+struct ast *parser_parse(struct lexer *lexer)
+{
     struct ast *root = parse_command_list(lexer);
     return root;
 }
-
 
 void ast_free(struct ast *node)
 {
