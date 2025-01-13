@@ -1,16 +1,21 @@
 #!/bin/sh
 
-echo "Running complete 42sh test suite..."
-echo "====================================="
+#!/bin/sh
+
+printf "Running complete 42sh test suite...\n"
+printf "=====================================\n"
 STATUS=0
 TOTAL_TESTS=0
 PASSED_TESTS=0
+FAILED_TESTS=0
 BIN_PATH="./src/42sh"
 
 if [ ! -f "$BIN_PATH" ]; then
-    echo "Error: 42sh binary not found at $BIN_PATH"
+    printf "Error: 42sh binary not found at %s\n" "$BIN_PATH"
     exit 1
 fi
+
+FAILED_TEST_NAMES=""
 
 run_test() {
     TEST_NAME=$1
@@ -19,21 +24,25 @@ run_test() {
     CHECK_CMD=$4
 
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
-    echo -n "Running $TEST_NAME... "
-
     OUTPUT=$(eval "$COMMAND" 2>&1)
     ACTUAL_EXIT_CODE=$?
 
     if [ $ACTUAL_EXIT_CODE -eq $EXPECTED_EXIT_CODE ] && eval "$CHECK_CMD"; then
-        echo "PASSED"
+        COLOR="\033[32m" # Vert
+        STATUS_MSG="CHECK"
         PASSED_TESTS=$((PASSED_TESTS + 1))
     else
-        echo "FAILED (expected $EXPECTED_EXIT_CODE, got $ACTUAL_EXIT_CODE)"
-        echo "Command output:"
-        echo "$OUTPUT"
+        COLOR="\033[31m" # Rouge
+        STATUS_MSG="ERROR"
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+        FAILED_TEST_NAMES="$FAILED_TEST_NAMES\n$TEST_NAME"
         STATUS=1
     fi
+
+    RESET="\033[0m"
+    printf "Test %d: %b%s%b\n" "$TOTAL_TESTS" "$COLOR" "$STATUS_MSG" "$RESET"
 }
+
 
 # Tests pour echo
 run_test "Test Echo 1: Simple echo" \
@@ -133,6 +142,66 @@ run_test "Test 24: Invalid syntax handling" \
 run_test "Test 25: Exit with specific code" \
     "$BIN_PATH -c 'exit 42'" 42 'true'
 
+# Tests supplémentaires pour les commentaires
+
+# Tests pour la gestion des commentaires
+run_test "Test Comment 1: Single line comment only" \
+    "$BIN_PATH -c '# This is a comment'" 0 \
+    '[ "$OUTPUT" = "" ]'
+
+run_test "Test Comment 2: Comment after a command" \
+    "$BIN_PATH -c 'echo Hello # This is a comment'" 0 \
+    'echo "$OUTPUT" | grep -q "Hello"'
+
+run_test "Test Comment 3: Comment with no space after #" \
+    "$BIN_PATH -c 'echo Hello#ThisIsComment'" 0 \
+    '[ "$OUTPUT" = "Hello#ThisIsComment" ]'
+
+run_test "Test Comment 4: Comment on a separate line" \
+    "$BIN_PATH -c '# First comment\necho Hello'" 0 \
+    'echo "$OUTPUT" | grep -q "Hello"'
+
+run_test "Test Comment 5: Mixed commands and comments" \
+    "$BIN_PATH -c 'echo Line1; # Comment in between\necho Line2'" 0 \
+    'echo "$OUTPUT" | grep -q "Line1" && echo "$OUTPUT" | grep -q "Line2"'
+
+run_test "Test Comment 6: Comment with special characters" \
+    "$BIN_PATH -c '# $USER and #123 are ignored\necho Hello'" 0 \
+    'echo "$OUTPUT" | grep -q "Hello"'
+
+run_test "Test Comment 7: Comment in if-else block" \
+    "$BIN_PATH -c 'if true; then # Comment in then\n echo yes; else echo no; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "yes"'
+
+run_test "Test Comment 8: Comment at the end of the file" \
+    "$BIN_PATH -c 'echo Last line # End of script'" 0 \
+    'echo "$OUTPUT" | grep -q "Last line"'
+
+run_test "Test Comment 9: Empty line followed by comment" \
+    "$BIN_PATH -c '\n# This is a standalone comment'" 0 \
+    '[ "$OUTPUT" = "" ]'
+
+run_test "Test Comment 10: Multiple comments in script" \
+    "$BIN_PATH -c '# First comment\necho Line1\n# Second comment\necho Line2'" 0 \
+    'echo "$OUTPUT" | grep -q "Line1" && echo "$OUTPUT" | grep -q "Line2"'
+
+
 echo "====================================="
-echo "Complete test suite completed: $PASSED_TESTS/$TOTAL_TESTS tests passed."
-exit $STATUS
+PERCENT_PASSED=$((PASSED_TESTS * 100 / TOTAL_TESTS))
+
+if [ $PERCENT_PASSED -ge 95 ]; then
+    COLOR="\033[32m" # Vert
+elif [ $PERCENT_PASSED -ge 50 ]; then
+    COLOR="\033[33m" # Jaune
+else
+    COLOR="\033[31m" # Rouge
+fi
+
+RESET="\033[0m"
+echo -e "${COLOR}Complete test suite completed: $PASSED_TESTS/$TOTAL_TESTS tests passed ($PERCENT_PASSED%).${RESET}"
+
+if [ $FAILED_TESTS -gt 0 ]; then
+    echo -e "\033[31mFailed tests:${RESET}$FAILED_TEST_NAMES"
+fi
+
+exit 0
