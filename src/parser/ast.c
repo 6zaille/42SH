@@ -90,60 +90,41 @@ void ast_pretty_print(struct ast *node, int depth)
     if (!node)
         return;
 
-    // Affichage de l'indentation et du connecteur visuel
     for (int i = 0; i < depth; i++)
         printf(i == depth - 1 ? "|---" : "|   ");
 
-    // Affichage des informations du nœud
-    if (node->type == AST_LIST)
-    {
+    switch (node->type) {
+    case AST_LIST:
         printf("LIST\n");
-    }
-    else if (node->type == AST_SIMPLE_COMMAND && depth != 0)
-    {
-    case AST_SIMPLE_COMMAND: {
+        break;
+    case AST_SIMPLE_COMMAND:
         printf("SIMPLE_COMMAND");
         struct ast_command_data *data = (struct ast_command_data *)node->data;
-        if (data && data->args)
-        {
-            for (size_t i = 0; data->args[i]; i++)
-            {
+        if (data && data->args) {
+            for (size_t i = 0; data->args[i]; i++) {
                 printf(" %s", data->args[i]);
             }
         }
         printf("\n");
         break;
-    }
-
-    case AST_LIST:
-        printf("LIST\n");
-        break;
-
-    case AST_IF: {
+    case AST_IF:
         printf("IF\n");
-        struct ast_if_data *data = (struct ast_if_data *)node->data;
-        if (data)
-        {
-            printf("%*sCondition:\n", depth * 2, "");
-            ast_pretty_print(data->condition, depth + 1);
-            printf("%*sThen:\n", depth * 2, "");
-            ast_pretty_print(data->then_branch, depth + 1);
-            if (data->else_branch)
-            {
-                printf("%*sElse:\n", depth * 2, "");
-                ast_pretty_print(data->else_branch, depth + 1);
-            }
+        printf("|   Condition:\n");
+        ast_pretty_print(((struct ast_if_data *)node->data)->condition, depth + 1);
+        printf("|   Then:\n");
+        ast_pretty_print(((struct ast_if_data *)node->data)->then_branch, depth + 1);
+        if (((struct ast_if_data *)node->data)->else_branch) {
+            printf("|   Else:\n");
+            ast_pretty_print(((struct ast_if_data *)node->data)->else_branch, depth + 1);
         }
         break;
-    }
-
     default:
         printf("UNKNOWN\n");
+        break;
     }
 
-    // Parcours des enfants dans la structure de l'arbre
-    for (size_t i = 0; i < node->children_count; i++)
-    {
+    for (size_t i = 0; i < node->children_count; i++) {
         ast_pretty_print(node->children[i], depth + 1);
     }
 }
+
