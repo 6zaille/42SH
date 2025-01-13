@@ -13,11 +13,35 @@ static struct ast *ast_create(enum ast_type type)
 {
     struct ast *node = malloc(sizeof(*node));
     if (!node)
+    {
         return NULL;
+    }
     node->type = type;
     node->children_count = 0;
     node->children = NULL;
     node->data = NULL;
+    return node;
+}
+
+static struct ast *ast_create_if(struct ast *condition, struct ast *then_branch,
+                                 struct ast *else_branch)
+{
+    struct ast *node = ast_create(AST_IF);
+    if (!node)
+    {
+        return NULL;
+    }
+    struct ast_if_data *data = malloc(sizeof(*data));
+    if (!data)
+    {
+        free(node);
+        return NULL;
+    }
+    data->condition = condition;
+    data->then_branch = then_branch;
+    data->else_branch = else_branch;
+    node->data = data;
+
     return node;
 }
 
@@ -68,7 +92,8 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     return cmd_node;
 }
 
-static struct ast *parse_command_list(struct lexer *lexer) {
+static struct ast *parse_command_list(struct lexer *lexer)
+{
     struct ast *list_node = ast_create(AST_LIST);
     if (!list_node)
         return NULL;
@@ -76,29 +101,34 @@ static struct ast *parse_command_list(struct lexer *lexer) {
     struct ast **children = NULL;
     size_t count = 0;
 
-    while (1) {
+    while (1)
+    {
         struct token *tok = lexer_next_token(lexer);
-        if (!tok || tok->type == TOKEN_EOF) {
+        if (!tok || tok->type == TOKEN_EOF)
+        {
             token_free(tok);
             break;
         }
 
         lexer_push_back(lexer, tok);
         struct ast *cmd = parse_simple_command(lexer);
-        if (!cmd) {
+        if (!cmd)
+        {
             token_free(tok);
             break;
         }
 
         children = safe_realloc(children, sizeof(struct ast *) * (count + 1));
-        if (!children) {
+        if (!children)
+        {
             ast_free(cmd);
             break;
         }
         children[count++] = cmd;
 
         tok = lexer_next_token(lexer);
-        if (tok->type == TOKEN_SEMICOLON) {
+        if (tok->type == TOKEN_SEMICOLON)
+        {
             token_free(tok);
             continue;
         }
@@ -112,11 +142,79 @@ static struct ast *parse_command_list(struct lexer *lexer) {
     return list_node;
 }
 
-struct ast *parser_parse(struct lexer *lexer) {
-    struct ast *root = parse_command_list(lexer);
-    return root;
+static struct ast *parse_if_statement(struct lexer *lexer)
+{
+    struct token *tok = lexer_next_token(lexer);
+    if (!tok || tok->type != TOKEN_IF)
+    {
+        return NULL;
+    }
+    struct ast *condition = parse_command_list(lexer);
+    if (!condition)
+    {
+        token_free(tok);
+        return NULL;
+    }
+
+    tok = lexer_next_token(lexer);
+    if (!tok || tok->type != TOKEN_THEN)
+    {
+        token_free(tok);
+        ast_free(condition);
+        return NULL;
+    }
+
+    struct ast *then_branch = parse_command_list(lexer);
+    if (!then_branch)
+    {
+        token_free(tok);
+        ast_free(condition);
+        return NULL;
+    }
+
+    struct ast *else_branch = NULL;
+    tok = lexer_next_token(lexer);
+    if (tok && tok->type == TOKEN_ELSE)
+    {
+        else_branch = parse_command_list(lexer);
+        if (!else_branch)
+        {
+            token_free(tok);
+            ast_free(condition);
+            ast_free(then_branch);
+            return NULL;
+        }
+        tok = lexer_next_token(lexer);
+    }
+
+    if (!tok || tok->type != TOKEN_FI)
+    {
+        token_free(tok);
+        ast_free(condition);
+        ast_free(then_branch);
+        ast_free(else_branch);
+        return NULL;
+    }
+
+    token_free(tok);
+    return ast_create_if(condition, then_branch, else_branch);
 }
 
+struct ast *parser_parse(struct lexer *lexer)
+{
+    struct token *tok = lexer_next_token(lexer);
+    if (!tok)
+        return NULL;
+
+    if (tok->type == TOKEN_IF)
+    {
+        lexer_push_back(lexer, tok);
+        return parse_if_statement(lexer);
+    }
+
+    lexer_push_back(lexer, tok);
+    return parse_command_list(lexer);
+}
 
 void ast_free(struct ast *node)
 {
@@ -138,6 +236,17 @@ void ast_free(struct ast *node)
                 free(data->args[i]);
             }
             free(data->args);
+            free(data);
+        }
+    }
+    else if (node->type == AST_IF)
+    {
+        struct ast_if_data *data = node->data;
+        if (data)
+        {
+            ast_free(data->condition);
+            ast_free(data->then_branch);
+            ast_free(data->else_branch);
             free(data);
         }
     }

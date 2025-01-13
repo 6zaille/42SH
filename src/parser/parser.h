@@ -9,6 +9,14 @@ enum ast_type
     AST_COMMAND,
     AST_SIMPLE_COMMAND,
     AST_LIST,
+    AST_IF,
+};
+
+struct ast_if_data
+{
+    struct ast *condition;
+    struct ast *then_branch;
+    struct ast *else_branch;
 };
 
 struct ast
