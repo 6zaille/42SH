@@ -4,6 +4,7 @@
 
 void ast_eval(struct ast *node)
 {
+    //ast_pretty_print(node, 0);
     if (!node)
         return;
 
@@ -51,14 +52,17 @@ void ast_pretty_print(struct ast *node, int depth)
     if (!node)
         return;
 
+    // Affichage de l'indentation et du connecteur visuel
     for (int i = 0; i < depth; i++)
-    {
-        printf("  ");
-    }
+        printf(i == depth - 1 ? "|---" : "|   ");
 
-    switch (node->type)
+    // Affichage des informations du nœud
+    if (node->type == AST_LIST)
     {
-    case AST_SIMPLE_COMMAND:
+        printf("LIST\n");
+    }
+    else if (node->type == AST_SIMPLE_COMMAND && depth != 0)
+    {
         printf("SIMPLE_COMMAND");
         struct ast_command_data *data = (struct ast_command_data *)node->data;
         if (data && data->args)
@@ -69,17 +73,13 @@ void ast_pretty_print(struct ast *node, int depth)
             }
         }
         printf("\n");
-        break;
-
-    case AST_LIST:
-        printf("LIST\n");
-        break;
-
-    default:
+    }
+    else if (depth != 0)
+    {
         printf("UNKNOWN\n");
-        break;
     }
 
+    // Parcours des enfants dans la structure de l'arbre
     for (size_t i = 0; i < node->children_count; i++)
     {
         ast_pretty_print(node->children[i], depth + 1);
