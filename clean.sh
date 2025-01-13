@@ -15,14 +15,14 @@ done
 rm -rf .vscode;
 rm config.status;
 rm -rf src/.deps;
-rm configure~;  
+rm configure~;
 rm src/Makefile.in src/Makefile;
 rm test_script.sh;
-rm -rf src/42sh 
+rm -rf src/42sh
 rm -rf src/42sh-main.o;
 rm tests/Makefile.in;
 rm tests/Makefile;
 rm test-driver;
 rm clean;
 clear;
-echo "XingXing a mangé tout les trash file";
+echo "XingXing a mangé toutes les trash files";
