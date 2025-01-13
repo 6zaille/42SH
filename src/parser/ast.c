@@ -4,7 +4,7 @@
 
 void ast_eval(struct ast *node)
 {
-    //ast_pretty_print(node, 0);
+    // ast_pretty_print(node, 0);
     if (!node)
         return;
 
