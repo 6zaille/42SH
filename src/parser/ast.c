@@ -1,110 +1,86 @@
 #include "ast.h"
+#include "parser.h"
 
-struct ast *ast_new(void)
-{
-    struct ast *node = malloc(sizeof(struct ast));
-    if (!node)
-    {
-        fprintf(stderr, "Failed to allocate memory for new AST node\n");
-        return NULL;
-    }
-
-    node->token = (struct token){ .value = NULL, .type = 0 };
-    node->value = 0;
-    node->children = NULL;
-    node->children_count = 0;
-
-    return node;
-}
-
-void ast_free(struct ast *node)
+void ast_eval(struct ast *node)
 {
     if (!node)
-    {
         return;
-    }
-    for (size_t i = 0; i < node->children_count; i++)
+
+    switch (node->type)
     {
-        ast_free(node->children[i]);
-    }
-    free(node->token.value);
-    free(node->children);
-    free(node);
-}
-
-int traverse_branch(struct ast *node)
-{
-    if (!node)
-        return 0;
-
-    int max_depth = 0;
-
-    for (size_t i = 0; i < node->children_count; i++)
-    {
-        int depth = traverse_branch(node->children[i]);
-        if (depth > max_depth)
-            max_depth = depth;
-    }
-
-    return max_depth + 1;
-}
-
-void __eval_ast(struct ast *root)
-{
-    if (!root)
-        return;
-    if (root->token.value)
-    {
-        int taille = traverse_branch(root);
-        char **args = malloc((taille) * sizeof(char *));
-        if (!args)
+    case AST_SIMPLE_COMMAND: {
+        struct ast_command_data *data = (struct ast_command_data *)node->data;
+        if (!data || !data->args)
             return;
 
-        args[0] = root->token.value;
-        int save = 1;
+        pid_t pid = fork();
+        if (pid == 0)
+        { // Processus enfant
+            execvp(data->args[0], data->args);
+            perror("execvp");
+            exit(EXIT_FAILURE);
+        }
+        else if (pid > 0)
+        { // Processus parent
+            int status;
+            waitpid(pid, &status, 0);
+        }
+        else
+        {
+            perror("fork");
+        }
+        break;
+    }
 
-        struct ast *current = root;
-        while (current->children_count > 0)
+    case AST_LIST:
+        for (size_t i = 0; i < node->children_count; i++)
         {
-            current = current->children[0];
-            args[save] = current->token.value;
-            save++;
+            ast_eval(node->children[i]);
         }
-        int res = execute_command(taille, args);
-        if (res == 1000000)
-        {
-            fprintf(stderr, "Erreur : commande inconnue\n");
-        }
-        free(args);
+        break;
+
+    default:
+        fprintf(stderr, "Unsupported AST node type: %d\n", node->type);
+        break;
     }
 }
 
-void eval_ast(struct ast *root)
-{
-    //print_arbre(root, 0);
-    for (size_t i = 0; i < root->children_count; i++)
-    {
-        __eval_ast(root->children[i]);
-    }
-}
-
-
-void print_arbre(struct ast *node, int depth)
+void ast_pretty_print(struct ast *node, int depth)
 {
     if (!node)
         return;
+
     for (int i = 0; i < depth; i++)
     {
-        if (i == depth - 1)
-            printf("  └─―――");
-        else
-            printf("  │ ");
-        // printf("   ");
+        printf("  ");
     }
-    printf("Node value: %s\n", node->token.value);
+
+    switch (node->type)
+    {
+    case AST_SIMPLE_COMMAND:
+        printf("SIMPLE_COMMAND");
+        struct ast_command_data *data = (struct ast_command_data *)node->data;
+        if (data && data->args)
+        {
+            for (size_t i = 0; data->args[i]; i++)
+            {
+                printf(" %s", data->args[i]);
+            }
+        }
+        printf("\n");
+        break;
+
+    case AST_LIST:
+        printf("LIST\n");
+        break;
+
+    default:
+        printf("UNKNOWN\n");
+        break;
+    }
 
     for (size_t i = 0; i < node->children_count; i++)
     {
-        print_arbre(node->children[i], depth + 1);
+        ast_pretty_print(node->children[i], depth + 1);
     }
 }

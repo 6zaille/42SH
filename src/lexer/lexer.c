@@ -8,15 +8,6 @@
 
 #include "token.h"
 
-static const struct
-{
-    const char *keyword;
-    enum token_type type;
-} keywords[] = {
-    { "if", TOKEN_IF },     { "then", TOKEN_THEN }, { "elif", TOKEN_ELIF },
-    { "else", TOKEN_ELSE }, { "fi", TOKEN_FI },
-};
-
 static struct token *create_token(enum token_type type, const char *value)
 {
     struct token *tok = malloc(sizeof(struct token));
@@ -38,42 +29,29 @@ static void skip_whitespace(struct lexer *lexer)
     }
 }
 
-static enum token_type check_keyword(const char *word)
+enum token_type check_keyword(const char *word)
 {
-    for (size_t i = 0; i < sizeof(keywords) / sizeof(keywords[0]); i++)
-    {
-        if (strcmp(word, keywords[i].keyword) == 0)
-        {
-            return keywords[i].type;
-        }
-    }
+    if (strcmp(word, "if") == 0)
+        return TOKEN_IF;
+    if (strcmp(word, "then") == 0)
+        return TOKEN_THEN;
+    if (strcmp(word, "elif") == 0)
+        return TOKEN_ELIF;
+    if (strcmp(word, "else") == 0)
+        return TOKEN_ELSE;
+    if (strcmp(word, "fi") == 0)
+        return TOKEN_FI;
+
     return TOKEN_WORD;
 }
 
-static int is_surrounded_by_letters(struct lexer *lexer, size_t pos)
+static int is_surrounded_by_letters(const char *input, size_t pos)
 {
-    char prev = (pos > 0) ? lexer->input[pos - 1] : ' ';
-    char next = lexer->input[pos + 1];
+    char prev = (pos > 0) ? input[pos - 1] : ' ';
+    char next = input[pos + 1];
     return isalnum(prev) && isalnum(next);
 }
 
-/*
-static struct token *handle_single_quote(struct lexer *lexer) {
-    size_t start = ++lexer->pos; // Skip opening single quote
-    while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\'') {
-        lexer->pos++;
-    }
-
-    if (lexer->input[lexer->pos] == '\0') {
-        return create_token(TOKEN_ERROR, "Unmatched single quote");
-    }
-
-    size_t len = lexer->pos - start;
-    char *value = strndup(lexer->input + start, len);
-    lexer->pos++; // Skip closing single quote
-    return create_token(TOKEN_WORD, value);
-}
-*/
 struct lexer *lexer_init(const char *input)
 {
     struct lexer *lexer = malloc(sizeof(struct lexer));
@@ -84,34 +62,42 @@ struct lexer *lexer_init(const char *input)
     }
     lexer->input = input;
     lexer->pos = 0;
+    lexer->pushed_back_token = NULL;
     return lexer;
 }
 
-void lexer_destroy(struct lexer *lexer)
+void lexer_push_back(struct lexer *lexer, struct token *token)
 {
-    free(lexer);
+    if (lexer->pushed_back_token)
+    {
+        token_free(lexer->pushed_back_token);
+    }
+    lexer->pushed_back_token = token;
 }
 
 struct token *lexer_next_token(struct lexer *lexer)
 {
+    if (lexer->pushed_back_token)
+    {
+        struct token *tok = lexer->pushed_back_token;
+        lexer->pushed_back_token = NULL;
+        return tok;
+    }
+
     skip_whitespace(lexer);
 
-    if (lexer->input[lexer->pos] == '\0')
+    if (lexer->input[lexer->pos] == '\0') // Fin de l'entrée
     {
         return create_token(TOKEN_EOF, NULL);
     }
 
     char c = lexer->input[lexer->pos];
-    if (c == '\'')
+    if (c == '\'') // Gestion des single quotes
     {
-        if (is_surrounded_by_letters(lexer, lexer->pos))
-        {
-            lexer->pos++;
-            return lexer_next_token(lexer);
-        }
-        return create_token(TOKEN_SINGLE_QUOTE, NULL);
+        lexer->pos++; // Skip the quote
+        return lexer_next_token(lexer);
     }
-    else if (c == '\\')
+    else if (c == '\\') // Gestion des backslashes suivis de 'n'
     {
         lexer->pos++;
         if (lexer->input[lexer->pos] == 'n')
@@ -120,31 +106,37 @@ struct token *lexer_next_token(struct lexer *lexer)
             return create_token(TOKEN_NEWLINE, NULL);
         }
     }
-    else if (c == '\n')
+    else if (c == '\n') // Ignore les newlines
     {
         lexer->pos++;
-        return create_token(TOKEN_NEWLINE, NULL);
+        return lexer_next_token(lexer);
     }
-    else if (c == ';')
+    else if (c == ';') // Gestion des points-virgules
     {
         lexer->pos++;
         return create_token(TOKEN_SEMICOLON, NULL);
     }
-    else
+    else // Gestion des mots
     {
-        size_t start = lexer->pos;
+        char *buffer = malloc(strlen(lexer->input) + 1);
+        size_t buf_index = 0;
+
         while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos])
                && lexer->input[lexer->pos] != ';'
-               && lexer->input[lexer->pos] != '\''
                && lexer->input[lexer->pos] != '\\'
                && lexer->input[lexer->pos] != '\n')
         {
-            lexer->pos++;
+            if (lexer->input[lexer->pos] == '\''
+                && is_surrounded_by_letters(lexer->input, lexer->pos))
+            {
+                lexer->pos++; // Skip the quote
+                continue;
+            }
+            buffer[buf_index++] = lexer->input[lexer->pos++];
         }
 
-        size_t len = lexer->pos - start;
-        char *value = strndup(lexer->input + start, len);
-        enum token_type type = check_keyword(value);
+        buffer[buf_index] = '\0';
+        enum token_type type = check_keyword(buffer);
         struct token *tok;
 
         if (type != TOKEN_WORD)
@@ -153,10 +145,10 @@ struct token *lexer_next_token(struct lexer *lexer)
         }
         else
         {
-            tok = create_token(TOKEN_WORD, value);
+            tok = create_token(TOKEN_WORD, buffer);
         }
 
-        free(value);
+        free(buffer);
         return tok;
     }
 
@@ -170,4 +162,13 @@ void token_free(struct token *token)
         free(token->value);
         free(token);
     }
+}
+
+void lexer_destroy(struct lexer *lexer)
+{
+    if (lexer->pushed_back_token)
+    {
+        token_free(lexer->pushed_back_token);
+    }
+    free(lexer);
 }

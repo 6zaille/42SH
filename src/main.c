@@ -80,23 +80,17 @@ int main(int argc, char **argv)
             return 2;
         }
 
-        enum parser_status status;
-        struct ast *ast = parser_parse(lexer, &status);
+        struct ast *ast = parser_parse(lexer);
         lexer_destroy(lexer);
 
-        if (status != PARSER_OK)
-        {
-            fprintf(stderr, "Syntax error\n");
-            return 2;
-        }
-
+        
         if (pretty_print)
         {
-            print_arbre(ast, 0);
+            ast_pretty_print(ast, 0);
         }
         else
         {
-            eval_ast(ast);
+            ast_eval(ast);
         }
 
         ast_free(ast);
@@ -126,20 +120,11 @@ int main(int argc, char **argv)
             return 2;
         }
 
-        enum parser_status status;
-        struct ast *ast = parser_parse(lexer, &status);
+        struct ast *ast = parser_parse(lexer);
         lexer_destroy(lexer);
 
-        if (status != PARSER_OK)
-        {
-            fprintf(stderr, "Syntax error\n");
-            free(line);
-            if (input_file != stdin)
-                fclose(input_file);
-            return 2;
-        }
-
-        eval_ast(ast);
+        
+        ast_eval(ast);
         ast_free(ast);
     }
 

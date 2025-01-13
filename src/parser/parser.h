@@ -3,16 +3,29 @@
 
 #include "../lexer/lexer.h"
 #include "../lexer/token.h"
-#include "ast.h"
 
-enum parser_status
+enum ast_type
 {
-    PARSER_OK,
-    PARSER_ERROR,
+    AST_COMMAND,
+    AST_SIMPLE_COMMAND,
+    AST_LIST,
 };
 
-struct ast *parse(enum parser_status *status, struct lexer *lexer);
+struct ast
+{
+    enum ast_type type;
+    size_t children_count;
+    struct ast **children;
+    void *data;
+};
 
-struct ast *parser_parse(struct lexer *lexer, enum parser_status *status);
+struct ast_command_data
+{
+    char **args;
+};
+
+struct ast *parser_parse(struct lexer *lexer);
+
+void ast_free(struct ast *node);
 
 #endif /* !PARSER_H */
