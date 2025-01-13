@@ -74,7 +74,7 @@ run_test "Test Echo 9: Echo with only flags" \
 
 run_test "Test Echo 10: Echo with invalid flags" \
     "$BIN_PATH -c 'echo -z Hello World'" 0 \
-    'echo "$OUTPUT" | grep -q "-z Hello World"'
+    '[ "$OUTPUT" = "-z Hello World" ]'
 
 run_test "Test Echo 11: Echo with mixed valid and invalid flags" \
     "$BIN_PATH -c 'echo -n -x Hello'" 0 \
