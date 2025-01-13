@@ -25,4 +25,4 @@ rm tests/Makefile;
 rm test-driver;
 rm clean;
 clear;
-echo "XingXing a mangé toutes les trash files";
+echo -e "🐒🐒🐒🐒🐒 XingXing a mangé toutes les trash files 🐒🐒🐒🐒🐒"
