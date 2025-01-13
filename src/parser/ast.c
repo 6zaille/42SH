@@ -2,6 +2,8 @@
 
 #include "parser.h"
 
+int last_exit_status = 0;
+
 void ast_eval(struct ast *node)
 {
     // ast_pretty_print(node, 0);
@@ -27,10 +29,20 @@ void ast_eval(struct ast *node)
         {
             int status;
             waitpid(pid, &status, 0);
+
+            if (WIFEXITED(status))
+            {
+                last_exit_status = WEXITSTATUS(status);
+            }
+            else
+            {
+                last_exit_status = 1;
+            }
         }
         else
         {
             perror("fork");
+            last_exit_status = 1;
         }
         break;
     }
@@ -48,19 +60,13 @@ void ast_eval(struct ast *node)
             return;
 
         int condition_status = 1;
-        if (data->condition)
+        if (data->condition && data->condition->children_count > 0)
         {
-            struct ast *current = data->condition;
-
-            while (current)
+            for (size_t i = 0; i < data->condition->children_count; i++)
             {
-                ast_eval(current);
-                condition_status = WEXITSTATUS(0);
-
-                if (current->children_count > 0)
-                    current = current->children[current->children_count - 1];
-                else
-                    current = NULL;
+                struct ast *child = data->condition->children[i];
+                ast_eval(child);
+                condition_status = last_exit_status;
             }
         }
 
@@ -74,6 +80,7 @@ void ast_eval(struct ast *node)
         }
         break;
     }
+
     default:
         fprintf(stderr, "Unsupported AST node type: %d\n", node->type);
         break;
@@ -88,15 +95,18 @@ void ast_pretty_print(struct ast *node, int depth)
     for (int i = 0; i < depth; i++)
         printf(i == depth - 1 ? "|---" : "|   ");
 
-    switch (node->type) {
+    switch (node->type)
+    {
     case AST_LIST:
         printf("LIST\n");
         break;
     case AST_SIMPLE_COMMAND:
         printf("SIMPLE_COMMAND");
         struct ast_command_data *data = (struct ast_command_data *)node->data;
-        if (data && data->args) {
-            for (size_t i = 0; data->args[i]; i++) {
+        if (data && data->args)
+        {
+            for (size_t i = 0; data->args[i]; i++)
+            {
                 printf(" %s", data->args[i]);
             }
         }
@@ -105,12 +115,16 @@ void ast_pretty_print(struct ast *node, int depth)
     case AST_IF:
         printf("IF\n");
         printf("|   Condition:\n");
-        ast_pretty_print(((struct ast_if_data *)node->data)->condition, depth + 1);
+        ast_pretty_print(((struct ast_if_data *)node->data)->condition,
+                         depth + 1);
         printf("|   Then:\n");
-        ast_pretty_print(((struct ast_if_data *)node->data)->then_branch, depth + 1);
-        if (((struct ast_if_data *)node->data)->else_branch) {
+        ast_pretty_print(((struct ast_if_data *)node->data)->then_branch,
+                         depth + 1);
+        if (((struct ast_if_data *)node->data)->else_branch)
+        {
             printf("|   Else:\n");
-            ast_pretty_print(((struct ast_if_data *)node->data)->else_branch, depth + 1);
+            ast_pretty_print(((struct ast_if_data *)node->data)->else_branch,
+                             depth + 1);
         }
         break;
     default:
@@ -118,8 +132,8 @@ void ast_pretty_print(struct ast *node, int depth)
         break;
     }
 
-    for (size_t i = 0; i < node->children_count; i++) {
+    for (size_t i = 0; i < node->children_count; i++)
+    {
         ast_pretty_print(node->children[i], depth + 1);
     }
 }
-

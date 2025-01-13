@@ -150,37 +150,52 @@ static struct ast *parse_if_statement(struct lexer *lexer)
         return NULL;
     }
 
-    struct ast *condition = parse_command_list(lexer); // Parser la condition
-    if (!condition)
+    struct ast *condition = ast_create(AST_LIST);
+    condition->children = NULL;
+    condition->children_count = 0;
+
+    while (1)
     {
+        struct ast *cmd = parse_command_list(lexer);
+        if (!cmd)
+        {
+            token_free(tok);
+            ast_free(condition);
+            return NULL;
+        }
+
+        condition->children = realloc(condition->children, 
+                                       sizeof(struct ast *) * (condition->children_count + 1));
+        condition->children[condition->children_count++] = cmd;
+
+        tok = lexer_next_token(lexer);
+        if (!tok || tok->type == TOKEN_THEN)
+            break;
+
+        if (tok->type != TOKEN_SEMICOLON && tok->type != TOKEN_NEWLINE)
+        {
+            token_free(tok);
+            ast_free(condition);
+            return NULL;
+        }
+
         token_free(tok);
-        return NULL;
     }
 
-    tok = lexer_next_token(lexer);
-    if (!tok || tok->type != TOKEN_THEN)
-    {
-        token_free(tok);
-        ast_free(condition);
-        return NULL;
-    }
-
-    struct ast *then_branch = parse_command_list(lexer); // Parser la branche "then"
+    struct ast *then_branch = parse_command_list(lexer);
     if (!then_branch)
     {
-        token_free(tok);
         ast_free(condition);
         return NULL;
     }
 
     struct ast *else_branch = NULL;
     tok = lexer_next_token(lexer);
-    if (tok && tok->type == TOKEN_ELSE) // Vérifier la branche "else" optionnelle
+    if (tok && tok->type == TOKEN_ELSE)
     {
         else_branch = parse_command_list(lexer);
         if (!else_branch)
         {
-            token_free(tok);
             ast_free(condition);
             ast_free(then_branch);
             return NULL;
@@ -188,7 +203,7 @@ static struct ast *parse_if_statement(struct lexer *lexer)
         tok = lexer_next_token(lexer);
     }
 
-    if (!tok || tok->type != TOKEN_FI) // Vérifier la clôture "fi"
+    if (!tok || tok->type != TOKEN_FI)
     {
         token_free(tok);
         ast_free(condition);
@@ -198,9 +213,8 @@ static struct ast *parse_if_statement(struct lexer *lexer)
     }
 
     token_free(tok);
-    return ast_create_if(condition, then_branch, else_branch); // Créer l'AST_IF
+    return ast_create_if(condition, then_branch, else_branch);
 }
-
 
 struct ast *parser_parse(struct lexer *lexer)
 {

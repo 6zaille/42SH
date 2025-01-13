@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -63,6 +64,8 @@ int main(int argc, char **argv)
 {
     FILE *input_file = stdin;
     int pretty_print = 0;
+    char *buffer = NULL;
+    size_t buffer_size = 0;
 
     if (argc > 1 && strcmp(argv[1], "-c") == 0)
     {
@@ -72,28 +75,12 @@ int main(int argc, char **argv)
             fprintf(stderr, "Usage: 42sh [-c COMMAND] [SCRIPT] [OPTIONS...]\n");
             return 127;
         }
-        char *command = argv[2];
-        struct lexer *lexer = lexer_init(command);
-        if (!lexer)
+        buffer = strdup(argv[2]);
+        if (!buffer)
         {
-            fprintf(stderr, "Failed to initialize lexer\n");
+            perror("Memory allocation error");
             return 2;
         }
-
-        struct ast *ast = parser_parse(lexer);
-        lexer_destroy(lexer);
-
-        if (pretty_print)
-        {
-            ast_pretty_print(ast, 0);
-        }
-        else
-        {
-            ast_eval(ast);
-        }
-
-        ast_free(ast);
-        exit(0);
     }
     else if (argc > 1)
     {
@@ -103,32 +90,58 @@ int main(int argc, char **argv)
             perror("Error opening file");
             return 127;
         }
-    }
-    char *line = NULL;
-    size_t len = 0;
 
-    while (custom_getline(&line, &len, input_file) != -1)
-    {
-        struct lexer *lexer = lexer_init(line);
-        if (!lexer)
+        fseek(input_file, 0, SEEK_END);
+        buffer_size = ftell(input_file);
+        fseek(input_file, 0, SEEK_SET);
+
+        buffer = malloc(buffer_size + 1);
+        if (!buffer)
         {
-            fprintf(stderr, "Failed to initialize lexer\n");
-            free(line);
-            if (input_file != stdin)
-                fclose(input_file);
+            perror("Memory allocation error");
+            fclose(input_file);
             return 2;
         }
+        
+        size_t read_size = fread(buffer, 1, buffer_size, input_file);
+        if (read_size != buffer_size)
+        {
+            fprintf(stderr, "Error reading the file. Expected %zu bytes, got %zu bytes.\n", buffer_size, read_size);
+            free(buffer);
+            fclose(input_file);
+            return 2;
+        }
+        buffer[buffer_size] = '\0';
 
-        struct ast *ast = parser_parse(lexer);
-        lexer_destroy(lexer);
-
-        ast_eval(ast);
-        ast_free(ast);
+        fclose(input_file);
+    }
+    else
+    {
+        fprintf(stderr, "Error: No input provided\n");
+        return 127;
     }
 
-    free(line);
-    if (input_file != stdin)
-        fclose(input_file);
+    struct lexer *lexer = lexer_init(buffer);
+    if (!lexer)
+    {
+        fprintf(stderr, "Failed to initialize lexer\n");
+        free(buffer);
+        return 2;
+    }
 
-    exit(0);
+    struct ast *ast = parser_parse(lexer);
+    lexer_destroy(lexer);
+
+    if (pretty_print)
+    {
+        ast_pretty_print(ast, 0);
+    }
+    else
+    {
+        ast_eval(ast);
+    }
+
+    ast_free(ast);
+    free(buffer);
+    return 0;
 }
