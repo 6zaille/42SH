@@ -70,7 +70,7 @@ int main(int argc, char **argv)
         {
             fprintf(stderr, "Error: Missing argument for -c\n");
             fprintf(stderr, "Usage: 42sh [-c COMMAND] [SCRIPT] [OPTIONS...]\n");
-            return 2;
+            return 127;
         }
         char *command = argv[2];
         struct lexer *lexer = lexer_init(command);
@@ -83,7 +83,6 @@ int main(int argc, char **argv)
         struct ast *ast = parser_parse(lexer);
         lexer_destroy(lexer);
 
-        
         if (pretty_print)
         {
             ast_pretty_print(ast, 0);
@@ -102,7 +101,7 @@ int main(int argc, char **argv)
         if (!input_file)
         {
             perror("Error opening file");
-            return 2;
+            return 127;
         }
     }
     char *line = NULL;
@@ -123,7 +122,6 @@ int main(int argc, char **argv)
         struct ast *ast = parser_parse(lexer);
         lexer_destroy(lexer);
 
-        
         ast_eval(ast);
         ast_free(ast);
     }
