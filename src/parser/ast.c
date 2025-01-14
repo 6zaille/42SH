@@ -17,36 +17,14 @@ void ast_eval(struct ast *node)
         if (!data || !data->args)
             return;
 
-        pid_t pid = fork();
-        if (pid == 0)
+        size_t argc = 0;
+        while (data->args[argc] != NULL)
         {
-            size_t argc = 0;
-            while (data->args[argc] != NULL)
-            {
-                argc++;
-            }
-            execute_command(argc, data->args);
-            exit(EXIT_FAILURE);
+            argc++;
         }
-        else if (pid > 0)
-        {
-            int status;
-            waitpid(pid, &status, 0);
 
-            if (WIFEXITED(status))
-            {
-                last_exit_status = WEXITSTATUS(status);
-            }
-            else
-            {
-                last_exit_status = 1;
-            }
-        }
-        else
-        {
-            perror("fork");
-            last_exit_status = 1;
-        }
+        last_exit_status =
+            execute_command(argc, data->args); // Appelle execute_command
         break;
     }
 

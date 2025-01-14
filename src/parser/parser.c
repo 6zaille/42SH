@@ -146,25 +146,25 @@ static struct ast *parse_command_list(struct lexer *lexer)
     return list_node;
 }
 
-static struct ast *parse_condition(struct lexer *lexer)
+static struct ast *parse_if_condition(struct lexer *lexer, struct token *tok)
 {
     struct ast *condition = ast_create(AST_LIST);
-    if (!condition)
-        return NULL;
+    condition->children = NULL;
+    condition->children_count = 0;
 
-    struct token *tok;
     while (1)
     {
         struct ast *cmd = parse_command_list(lexer);
         if (!cmd)
         {
+            token_free(tok);
             ast_free(condition);
             return NULL;
         }
 
-        condition->children = safe_realloc(
-            condition->children,
-            sizeof(struct ast *) * (condition->children_count + 1));
+        condition->children =
+            realloc(condition->children,
+                    sizeof(struct ast *) * (condition->children_count + 1));
         condition->children[condition->children_count++] = cmd;
 
         tok = lexer_next_token(lexer);
@@ -180,6 +180,7 @@ static struct ast *parse_condition(struct lexer *lexer)
 
         token_free(tok);
     }
+
     return condition;
 }
 
@@ -187,11 +188,15 @@ static struct ast *parse_if_statement(struct lexer *lexer)
 {
     struct token *tok = lexer_next_token(lexer);
     if (!tok || tok->type != TOKEN_IF)
+    {
         return NULL;
+    }
 
-    struct ast *condition = parse_condition(lexer);
+    struct ast *condition = parse_if_condition(lexer, tok);
     if (!condition)
+    {
         return NULL;
+    }
 
     struct ast *then_branch = parse_command_list(lexer);
     if (!then_branch)
