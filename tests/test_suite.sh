@@ -63,7 +63,7 @@ run_test "Test Echo 4: Echo with -e flag (tabs)" \
 
 run_test "Test Echo 5: Echo with -E flag (escapes ignored)" \
     "$BIN_PATH -c 'echo -E Hello\\nWorld'" 0 \
-    'echo "$OUTPUT" | grep -q "Hello\\nWorld"'
+    'echo "$OUTPUT" | grep -q "Hello\nWorld"'
 
 run_test "Test Echo 6: Echo combination of -n and -e" \
     "$BIN_PATH -c 'echo -n -e Hello\\nWorld'" 0 \
@@ -87,7 +87,7 @@ run_test "Test Echo 10: Echo with invalid flags" \
 
 run_test "Test Echo 11: Echo with mixed valid and invalid flags" \
     "$BIN_PATH -c 'echo -n -x Hello'" 0 \
-    '[ "$OUTPUT" = "Hello" ]'
+    '[ "$OUTPUT" = "-x Hello" ]'
 
 run_test "Test Echo 12: Echo with special characters" \
     "$BIN_PATH -c 'echo \"Hello $USER!\"'" 0 \

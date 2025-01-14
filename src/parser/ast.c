@@ -6,7 +6,6 @@ int last_exit_status = 0;
 
 void ast_eval(struct ast *node)
 {
-    // ast_pretty_print(node, 0);
     if (!node)
     {
         return;
@@ -21,8 +20,12 @@ void ast_eval(struct ast *node)
         pid_t pid = fork();
         if (pid == 0)
         {
-            execvp(data->args[0], data->args);
-            perror("execvp");
+            size_t argc = 0;
+            while (data->args[argc] != NULL)
+            {
+                argc++;
+            }
+            execute_command(argc, data->args);
             exit(EXIT_FAILURE);
         }
         else if (pid > 0)

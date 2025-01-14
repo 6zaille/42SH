@@ -102,11 +102,14 @@ int main(int argc, char **argv)
             fclose(input_file);
             return 2;
         }
-        
+
         size_t read_size = fread(buffer, 1, buffer_size, input_file);
         if (read_size != buffer_size)
         {
-            fprintf(stderr, "Error reading the file. Expected %zu bytes, got %zu bytes.\n", buffer_size, read_size);
+            fprintf(
+                stderr,
+                "Error reading the file. Expected %zu bytes, got %zu bytes.\n",
+                buffer_size, read_size);
             free(buffer);
             fclose(input_file);
             return 2;
@@ -138,6 +141,7 @@ int main(int argc, char **argv)
     }
     else
     {
+        // ast_pretty_print(ast, 0);
         ast_eval(ast);
     }
 

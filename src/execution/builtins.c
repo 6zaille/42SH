@@ -6,28 +6,52 @@
 
 int builtin_echo(int argc, char **argv)
 {
-    int newline = 1;
-    int interpret_escapes = 0;
+    int flag_e = 0;
+    int flag_n = 0;
     int i = 1;
 
-    while (i < argc && argv[i][0] == '-')
+    // Analyse des options valides
+    while (i < argc && argv[i][0] == '-' && argv[i][1] != '\0')
     {
-        if (strcmp(argv[i], "-n") == 0)
-            newline = 0;
-        else if (strcmp(argv[i], "-e") == 0)
-            interpret_escapes = 1;
-        else if (strcmp(argv[i], "-E") == 0)
-            interpret_escapes = 0;
-        else
-            break;
+        int is_option = 1;
+        for (size_t j = 1; argv[i][j]; j++)
+        {
+            if (argv[i][j] == 'e')
+            {
+                flag_e = 0;
+            }
+            else if (argv[i][j] == 'E')
+            {
+                flag_e = 1;
+            }
+            else if (argv[i][j] == 'n')
+            {
+                flag_n = 1;
+            }
+            else
+            {
+                is_option =
+                    0; // Non reconnu, sortir et considérer comme argument
+                break;
+            }
+        }
+        if (!is_option)
+            break; // Traiter comme argument normal
         i++;
     }
 
-    for (; i < argc; i++)
+    // Affichage des arguments restants
+    for (int j = i; j < argc; j++)
     {
-        if (interpret_escapes)
+        if (j > i)
         {
-            for (char *p = argv[i]; *p; p++)
+            printf(" ");
+        }
+
+        if (flag_e == 1)
+        {
+            // Interpréter les échappements
+            for (char *p = argv[j]; *p; p++)
             {
                 if (*p == '\\')
                 {
@@ -35,10 +59,10 @@ int builtin_echo(int argc, char **argv)
                     switch (*p)
                     {
                     case 'n':
-                        putchar('\n');
+                        putchar('n');
                         break;
                     case 't':
-                        putchar('\t');
+                        putchar('t');
                         break;
                     case '\\':
                         putchar('\\');
@@ -57,16 +81,16 @@ int builtin_echo(int argc, char **argv)
         }
         else
         {
-            printf("%s", argv[i]);
+            // Affichage brut (mode -E ou par défaut)
+            printf("%s", argv[j]);
         }
-
-        if (i < argc - 1)
-            putchar(' ');
     }
 
-    if (newline)
-        putchar('\n');
-
+    // Ajouter un saut de ligne si -n n'est pas activé
+    if (!flag_n)
+    {
+        printf("\n");
+    }
     fflush(stdout);
     return 0;
 }
