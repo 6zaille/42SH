@@ -147,5 +147,5 @@ int main(int argc, char **argv)
 
     ast_free(ast);
     free(buffer);
-    return 0;
+    return last_exit_status;
 }

@@ -29,6 +29,8 @@ enum redirection_type {
     REDIR_RW          // <>
 };
 
+extern int last_exit_status;
+
 struct redirection {
     enum redirection_type type;
     char *filename;
