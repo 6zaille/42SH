@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#define _POSIX_C_SOURCE 200809L
+
 int verbose_mode = 0;
 
 void set_verbose_mode(int enabled) {
@@ -41,14 +43,14 @@ void set_variable(const char *name, const char *value) {
     struct variable *var = find_variable(name);
     if (var) {
         free(var->value);
-        var->value = strdup(value);
+        var->value = xstrdup(value);
     } else {
         if (variable_count >= MAX_VARIABLES) {
             fprintf(stderr, "Error: maximum number of variables reached\n");
             return;
         }
-        variables[variable_count].name = strdup(name);
-        variables[variable_count].value = strdup(value);
+        variables[variable_count].name = xstrdup(name);
+        variables[variable_count].value = xstrdup(value);
         variable_count++;
     }
 }
@@ -75,10 +77,16 @@ char *substitute_variables(const char *input) {
                 p++;
             }
             size_t len = p - start;
-            char var_name[len + 1];
+            char *var_name = malloc(len + 1);
+            if (!var_name) {
+                perror("malloc");
+                free(result);
+                return NULL;
+            }
             strncpy(var_name, start, len);
             var_name[len] = '\0';
             const char *value = get_variable(var_name);
+            free(var_name);
             if (value) {
                 size_t value_len = strlen(value);
                 if (result_pos + value_len >= 4096) {
