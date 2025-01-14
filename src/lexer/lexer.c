@@ -158,7 +158,7 @@ struct token *lexer_next_token(struct lexer *lexer)
     else if (c == '\n') // Ignore newlines
     {
         lexer->pos++;
-        return lexer_next_token(lexer);
+        return create_token(TOKEN_NEWLINE, NULL);
     }
     else if (c == ';') // Handle semicolons
     {
