@@ -3,10 +3,17 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <unistd.h>
+#include <time.h>
 
 #define _POSIX_C_SOURCE 200809L
 
 int verbose_mode = 0;
+static int last_exit_status = 0;
+static char *args[256] = {NULL};
+static size_t args_count = 0;
+static char *pwd = NULL;
+static char *oldpwd = NULL;
 
 void set_verbose_mode(int enabled) {
     verbose_mode = enabled;
@@ -55,8 +62,36 @@ void set_variable(const char *name, const char *value) {
     }
 }
 
-// Récupère la valeur d'une variable
+// Récupère la valeur d'une variable ou des variables spéciales
 const char *get_variable(const char *name) {
+    static char buffer[4096];
+    if (strcmp(name, "?") == 0) {
+        snprintf(buffer, sizeof(buffer), "%d", last_exit_status);
+        return buffer;
+    } else if (strcmp(name, "$") == 0) {
+        snprintf(buffer, sizeof(buffer), "%d", getpid());
+        return buffer;
+    } else if (strcmp(name, "#") == 0) {
+        snprintf(buffer, sizeof(buffer), "%zu", args_count);
+        return buffer;
+    } else if (strcmp(name, "@") == 0 || strcmp(name, "*") == 0) {
+        size_t pos = 0;
+        for (size_t i = 0; i < args_count; i++) {
+            pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%s%c", args[i], name[0] == '*' ? ' ' : '\0');
+        }
+        return buffer;
+    } else if (strcmp(name, "RANDOM") == 0) {
+        srand(time(NULL));
+        snprintf(buffer, sizeof(buffer), "%d", rand() % 32768);
+        return buffer;
+    } else if (strcmp(name, "UID") == 0) {
+        snprintf(buffer, sizeof(buffer), "%d", getuid());
+        return buffer;
+    } else if (strcmp(name, "PWD") == 0) {
+        return pwd;
+    } else if (strcmp(name, "OLDPWD") == 0) {
+        return oldpwd;
+    }
     struct variable *var = find_variable(name);
     return var ? var->value : NULL;
 }
@@ -111,11 +146,25 @@ char *substitute_variables(const char *input) {
     return result;
 }
 
+// Configure les arguments pour $@ et $*
+void set_args(size_t count, char **arguments) {
+    args_count = count;
+    for (size_t i = 0; i < count; i++) {
+        args[i] = xstrdup(arguments[i]);
+    }
+}
+
 // Libère les variables
 void free_variables(void) {
     for (size_t i = 0; i < variable_count; i++) {
         free(variables[i].name);
         free(variables[i].value);
     }
+    for (size_t i = 0; i < args_count; i++) {
+        free(args[i]);
+    }
     variable_count = 0;
+    args_count = 0;
+    free(pwd);
+    free(oldpwd);
 }
