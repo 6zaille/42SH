@@ -141,7 +141,14 @@ struct token *lexer_next_token(struct lexer *lexer)
     }
 
     char c = lexer->input[lexer->pos];
-    if (c == '\'') // Handle single quotes
+
+    if (c == '|')
+    {
+        lexer->pos++;
+        return create_token(TOKEN_PIPE, "|");
+    }
+
+    else if (c == '\'') // Handle single quotes
     {
         lexer->pos++; // Skip the quote
         return lexer_next_token(lexer);

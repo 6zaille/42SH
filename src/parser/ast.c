@@ -23,8 +23,7 @@ void ast_eval(struct ast *node)
             argc++;
         }
 
-        last_exit_status =
-            execute_command(argc, data->args); // Appelle execute_command
+        last_exit_status = execute_command(argc, data->args);
         break;
     }
 
@@ -34,6 +33,68 @@ void ast_eval(struct ast *node)
             ast_eval(node->children[i]);
         }
         break;
+
+    case AST_PIPELINE: {
+        int num_commands = node->children_count;
+        int **pipes = malloc((num_commands - 1) * sizeof(int *));
+        for (int i = 0; i < num_commands - 1; i++)
+        {
+            pipes[i] = malloc(2 * sizeof(int));
+            if (pipe(pipes[i]) == -1)
+            {
+                perror("pipe");
+                last_exit_status = 1;
+                for (int j = 0; j <= i; j++)
+                {
+                    free(pipes[j]);
+                }
+                free(pipes);
+                return;
+            }
+        }
+
+        for (int i = 0; i < num_commands; i++)
+        {
+            pid_t pid = fork();
+            if (pid == 0)
+            {
+                if (i > 0)
+                {
+                    dup2(pipes[i - 1][0], STDIN_FILENO);
+                }
+                if (i < num_commands - 1)
+                {
+                    dup2(pipes[i][1], STDOUT_FILENO);
+                }
+                for (int j = 0; j < num_commands - 1; j++)
+                {
+                    close(pipes[j][0]);
+                    close(pipes[j][1]);
+                }
+                ast_eval(node->children[i]);
+                exit(last_exit_status);
+            }
+        }
+
+        for (int i = 0; i < num_commands - 1; i++)
+        {
+            close(pipes[i][0]);
+            close(pipes[i][1]);
+            free(pipes[i]);
+        }
+        free(pipes);
+
+        for (int i = 0; i < num_commands; i++)
+        {
+            int status;
+            wait(&status);
+            if (WIFEXITED(status))
+            {
+                last_exit_status = WEXITSTATUS(status);
+            }
+        }
+        break;
+    }
 
     case AST_IF: {
         struct ast_if_data *data = (struct ast_if_data *)node->data;

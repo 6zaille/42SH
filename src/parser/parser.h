@@ -10,6 +10,7 @@ enum ast_type
     AST_SIMPLE_COMMAND,
     AST_LIST,
     AST_IF,
+    AST_PIPELINE
 };
 
 struct ast_if_data
@@ -35,6 +36,7 @@ struct ast_command_data
 };
 
 struct ast *parser_parse(struct lexer *lexer);
+struct ast *parse_pipeline(struct lexer *lexer);
 
 void ast_free(struct ast *node);
 

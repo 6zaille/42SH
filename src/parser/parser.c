@@ -245,7 +245,7 @@ struct ast *parser_parse(struct lexer *lexer)
     }
 
     lexer_push_back(lexer, tok);
-    return parse_command_list(lexer);
+    return parse_pipeline(lexer);
 }
 
 void ast_free(struct ast *node)
@@ -283,4 +283,33 @@ void ast_free(struct ast *node)
         }
     }
     free(node);
+}
+
+struct ast *parse_pipeline(struct lexer *lexer)
+{
+    struct ast *pipeline_node = ast_create(AST_PIPELINE);
+    struct ast **commands = NULL;
+    size_t count = 0;
+
+    while (1)
+    {
+        struct ast *command = parse_simple_command(lexer);
+        if (!command)
+            break;
+
+        commands = realloc(commands, (count + 1) * sizeof(struct ast *));
+        commands[count++] = command;
+
+        struct token *tok = lexer_next_token(lexer);
+        if (!tok || tok->type != TOKEN_PIPE)
+        {
+            lexer_push_back(lexer, tok);
+            break;
+        }
+        token_free(tok);
+    }
+
+    pipeline_node->children = commands;
+    pipeline_node->children_count = count;
+    return pipeline_node;
 }
