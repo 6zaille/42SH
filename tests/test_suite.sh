@@ -49,7 +49,8 @@ run_test() {
 }
 
 
-# Tests pour echo
+# Tests STEP 1 ==========================================================
+
 run_test "Test Echo 1: Simple echo" \
     "$BIN_PATH -c 'echo Hello World'" 0 \
     'echo "$OUTPUT" | grep -q "Hello World"'
@@ -105,7 +106,7 @@ run_test "Test Echo 13: Echo with unicode characters" \
 run_test "Test Echo 14: Echo with multi-line input" \
     "$BIN_PATH -c 'echo -e \"Line1\\nLine2\\nLine3\"'" 0 \
     'echo "$OUTPUT" | grep -q "Line1" && echo "$OUTPUT" | grep -q "Line2" && echo "$OUTPUT" | grep -q "Line3"'
-# Tests supplémentaires pour d'autres fonctionnalités
+
 run_test "Test 16: Builtin true" \
     "$BIN_PATH -c 'true'" 0 'true'
 
@@ -182,6 +183,94 @@ run_test "Test 34: Empty line followed by comment" \
 run_test "Test 35: Multiple comments in script" \
     "$BIN_PATH -c '# First comment\necho Line1\n# Second comment\necho Line2'" 0 \
     'echo "$OUTPUT" | grep -q ""'
+
+
+
+#Test step 2 ==========================================================
+
+
+run_test "Test Redirection 1: Output redirection" \
+    "$BIN_PATH -c 'echo Hello > test_redirection_1.txt'; grep -q 'Hello' test_redirection_1.txt && rm test_redirection_1.txt" 0 \
+    'true'
+
+run_test "Test Redirection 2: Input redirection" \
+    "echo 'Input Test' > input.txt; $BIN_PATH -c 'cat < input.txt' > output.txt && rm input.txt" 0 \
+    'grep -q "^Input Test$" output.txt && rm output.txt'
+
+run_test "Test Redirection 3: Append redirection" \
+    "echo 'First Line' > file.txt; $BIN_PATH -c 'echo Second Line >> file.txt'; grep -q '^Second Line$' file.txt && rm file.txt" 0 \
+    'true'
+
+run_test "Test Redirection 4: Stderr redirection" \
+    "$BIN_PATH -c 'ls nonexistentfile 2> error.txt'; grep -q 'ls: nonexistentfile: No such file or directory' error.txt && rm error.txt" 0 \
+    'true'
+
+
+run_test "Test Pipeline 1: Simple pipeline" \
+    "$BIN_PATH -c 'echo Hello | grep Hello'" 0 \
+    'echo "$OUTPUT" | grep -qx "Hello"'
+
+run_test "Test Pipeline 2: Three commands" \
+    "$BIN_PATH -c 'echo Hello | tr H J | grep Jello'" 0 \
+    'echo "$OUTPUT" | grep -qx "Jello"'
+
+run_test "Test Negation 1: Simple negation" \
+    "$BIN_PATH -c '! false'" 0 \
+    '[ "$ACTUAL_EXIT_CODE" -eq 0 ]'
+
+run_test "Test Negation 2: Negated pipeline" \
+    "$BIN_PATH -c '! echo Hello | false'" 1 \
+    '[ "$ACTUAL_EXIT_CODE" -eq 1 ]'
+
+run_test "Test Quotes 1: Double quotes with variables" \
+    "$BIN_PATH -c 'VAR=42; echo \"Value: \$VAR\"'" 0 \
+    'echo "$OUTPUT" | grep -qx "Value: 42"'
+
+run_test "Test Quotes 2: Escape characters" \
+    "$BIN_PATH -c 'echo \"Hello \\\"World\\\"\"'" 0 \
+    'echo "$OUTPUT" | grep -qx "Hello \"World\""'
+
+run_test "Test Loops 1: While loop" \
+    "$BIN_PATH -c 'COUNTER=0; while [ \$COUNTER -lt 3 ]; do echo \$COUNTER; COUNTER=\$((COUNTER + 1)); done'" 0 \
+    'echo "$OUTPUT" | grep -qx "0" && echo "$OUTPUT" | grep -qx "2"'
+
+run_test "Test Loops 2: Until loop" \
+    "$BIN_PATH -c 'COUNTER=5; until [ \$COUNTER -eq 0 ]; do echo \$COUNTER; COUNTER=\$((COUNTER - 1)); done'" 0 \
+    'echo "$OUTPUT" | grep -qx "5" && echo "$OUTPUT" | grep -qx "1"'
+
+run_test "Test Operators 1: Logical AND" \
+    "$BIN_PATH -c 'true && echo Success'" 0 \
+    'echo "$OUTPUT" | grep -qx "Success"'
+
+run_test "Test Operators 2: Logical OR" \
+    "$BIN_PATH -c 'false || echo Failure'" 0 \
+    'echo "$OUTPUT" | grep -qx "Failure"'
+
+run_test "Test Variables 1: Variable assignment" \
+    "$BIN_PATH -c 'VAR=test; echo \$VAR'" 0 \
+    'echo "$OUTPUT" | grep -qx "test"'
+
+run_test "Test Variables 2: Special variable \$?" \
+    "$BIN_PATH -c 'false; echo \$?'" 0 \
+    'echo "$OUTPUT" | grep -qx "1"'
+
+
+run_test "Test Variables 3: Special variable \$\$" \
+    "$BIN_PATH -c 'echo $$'" 0 \
+    '[ "$OUTPUT" -eq "$$" ]'
+
+run_test "Test Loops 3: For loop" \
+    "$BIN_PATH -c 'for i in 1 2 3; do echo \$i; done'" 0 \
+    'echo "$OUTPUT" | grep -qx "1" && echo "$OUTPUT" | grep -qx "3"'
+
+run_test "Test Combined 1: Pipeline and redirection" \
+    "$BIN_PATH -c 'echo Hello | tr H J > output.txt'; grep -qx \"Jello\" output.txt && rm output.txt" 0 \
+    'true'
+
+run_test "Test Combined 2: Nested loops" \
+    "$BIN_PATH -c 'for i in 1 2; do for j in A B; do echo \$i\$j; done; done'" 0 \
+    'echo "$OUTPUT" | grep -qx "1A" && echo "$OUTPUT" | grep -qx "2B"'
+
 
 echo "====================================="
 PERCENT_PASSED=$((PASSED_TESTS * 100 / TOTAL_TESTS))
