@@ -31,7 +31,7 @@ struct ast_command_data
 {
     char **args;
     struct redirection *redirections; // tableau de redirections
-    size_t redirection_count;        // nombre de redirections
+    size_t redirection_count; // nombre de redirections
 };
 
 struct ast *parser_parse(struct lexer *lexer);

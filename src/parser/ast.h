@@ -19,22 +19,23 @@
 void ast_eval(struct ast *node);
 void ast_pretty_print(struct ast *node, int depth);
 
-enum redirection_type {
-    REDIR_OUT,        // >
-    REDIR_IN,         // <
-    REDIR_APPEND,     // >>
-    REDIR_DUP_OUT,    // >&
-    REDIR_DUP_IN,     // <&
-    REDIR_CLOBBER,    // >|
-    REDIR_RW          // <>
+enum redirection_type
+{
+    REDIR_OUT, // >
+    REDIR_IN, // <
+    REDIR_APPEND, // >>
+    REDIR_DUP_OUT, // >&
+    REDIR_DUP_IN, // <&
+    REDIR_CLOBBER, // >|
+    REDIR_RW // <>
 };
 
 extern int last_exit_status;
 
-struct redirection {
+struct redirection
+{
     enum redirection_type type;
     char *filename;
 };
-
 
 #endif /* !AST_H */

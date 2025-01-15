@@ -39,7 +39,7 @@ run_test() {
         STATUS=1
     fi
 
-    
+
     RESET="\033[0m"
     if [ $TOTAL_TESTS -gt 9 ]; then
         printf "Test %d: %b%s%b\n" "$TOTAL_TESTS" "$COLOR" "$STATUS_MSG" "$RESET"
