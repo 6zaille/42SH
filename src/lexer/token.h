@@ -16,7 +16,8 @@ enum token_type
     TOKEN_SINGLE_QUOTE,
     TOKEN_EOF,
     TOKEN_ERROR,
-    TOKEN_PIPE
+    TOKEN_PIPE,
+    TOKEN_NEGATION
 };
 
 struct token

@@ -8,6 +8,7 @@
 
 #include "../lexer/lexer.h"
 #include "../lexer/token.h"
+#include "ast.h"
 
 static struct ast *ast_create(enum ast_type type)
 {
@@ -305,6 +306,12 @@ struct ast *parse_pipeline(struct lexer *lexer)
         {
             lexer_push_back(lexer, tok);
             break;
+        }
+        if (tok->type == TOKEN_NEGATION)
+        {
+            struct ast *negation_node = ast_create(AST_NEGATION);
+            negation_node->children[0] = pipeline_node;
+            return negation_node;
         }
         token_free(tok);
     }

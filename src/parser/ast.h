@@ -30,6 +30,38 @@ enum redirection_type
     REDIR_RW // <>
 };
 
+enum ast_type
+{
+    AST_COMMAND,
+    AST_SIMPLE_COMMAND,
+    AST_LIST,
+    AST_IF,
+    AST_PIPELINE,
+    AST_NEGATION
+};
+
+struct ast_if_data
+{
+    struct ast *condition;
+    struct ast *then_branch;
+    struct ast *else_branch;
+};
+
+struct ast
+{
+    enum ast_type type;
+    size_t children_count;
+    struct ast **children;
+    void *data;
+};
+
+struct ast_command_data
+{
+    char **args;
+    struct redirection *redirections; // tableau de redirections
+    size_t redirection_count; // nombre de redirections
+};
+
 extern int last_exit_status;
 
 struct redirection
