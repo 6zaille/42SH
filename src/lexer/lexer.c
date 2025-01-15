@@ -172,6 +172,11 @@ struct token *lexer_next_token(struct lexer *lexer)
         lexer->pos++;
         return create_token(TOKEN_SEMICOLON, NULL);
     }
+    else if (c == '!')
+    {
+        lexer->pos++;
+        return create_token(TOKEN_NEGATION, "!");
+    }
     else // Handle words
     {
         return handle_word_token(lexer);

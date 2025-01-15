@@ -154,6 +154,12 @@ void ast_pretty_print(struct ast *node, int depth)
         }
         printf("\n");
         break;
+    case AST_NEGATION: {
+        struct ast *child = node->children[0];
+        ast_eval(child);
+        last_exit_status = (last_exit_status == 0) ? 1 : 0;
+        break;
+    }
     case AST_IF:
         printf("IF\n");
         printf("|   Condition:\n");
