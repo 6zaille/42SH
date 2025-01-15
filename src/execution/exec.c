@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "../parser/ast.h"
 #include "builtins.h"
 
 #ifndef O_CLOEXEC
@@ -75,75 +76,49 @@ static void apply_redirection(const char *filename, int fd, int flags, int mode)
     close(new_fd);
 }
 
-static void redirect_fd(int source_fd, int target_fd)
+int execute_command(int argc, char **argv)
 {
-    save_fd(target_fd);
-    if (dup2(source_fd, target_fd) == -1)
-    {
-        perror("dup2");
-        exit(EXIT_FAILURE);
-    }
-}
-
-void execute_with_redirections(struct ast *node)
-{
-    if (!node || node->type != AST_SIMPLE_COMMAND)
-    {
-        return;
-    }
-
-    struct ast_command_data *data = (struct ast_command_data *)node->data;
-    if (!data || !data->redirections)
-    {
-        return;
-    }
-
-    for (size_t i = 0; i < data->redirection_count; i++)
-    {
-        struct redirection *redir = &data->redirections[i];
-        switch (redir->type)
-        {
-        case REDIR_OUT:
-            apply_redirection(redir->filename, STDOUT_FILENO,
-                              O_WRONLY | O_CREAT | O_TRUNC, 0644);
-            break;
-        case REDIR_IN:
-            apply_redirection(redir->filename, STDIN_FILENO, O_RDONLY, 0);
-            break;
-        case REDIR_APPEND:
-            apply_redirection(redir->filename, STDOUT_FILENO,
-                              O_WRONLY | O_CREAT | O_APPEND, 0644);
-            break;
-        case REDIR_DUP_OUT:
-            redirect_fd(atoi(redir->filename), STDOUT_FILENO);
-            break;
-        case REDIR_DUP_IN:
-            redirect_fd(atoi(redir->filename), STDIN_FILENO);
-            break;
-        case REDIR_CLOBBER:
-            apply_redirection(redir->filename, STDOUT_FILENO,
-                              O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
-            break;
-        case REDIR_RW:
-            apply_redirection(redir->filename, STDIN_FILENO, O_RDWR | O_CREAT,
-                              0644);
-            break;
-        default:
-            fprintf(stderr, "Unsupported redirection type\n");
-            exit(EXIT_FAILURE);
+    // Vérifiez les redirections dans les arguments
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], ">") == 0) {
+            // Redirection de sortie
+            if (i + 1 < argc) {
+                apply_redirection(argv[i + 1], STDOUT_FILENO, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                argv[i] = NULL; // Terminez la liste d'arguments ici
+                break;
+            }
+        } else if (strcmp(argv[i], ">>") == 0) {
+            // Redirection d'ajout
+            if (i + 1 < argc) {
+                apply_redirection(argv[i + 1], STDOUT_FILENO, O_WRONLY | O_CREAT | O_APPEND, 0644);
+                argv[i] = NULL; // Terminez la liste d'arguments ici
+                break;
+            }
         }
     }
-}
 
-int execute_command_with_redirections(int argc, char **argv, struct ast *node)
-{
-    execute_with_redirections(node);
+    // Exécutez la commande
+    pid_t pid = fork();
+    if (pid == 0) {
+        // Enfant
+        if (execvp(argv[0], argv) == -1) {
+            perror("42sh");
+            exit(EXIT_FAILURE);
+        }
+    } else if (pid > 0) {
+        // Parent
+        int status;
+        waitpid(pid, &status, 0);
 
-    int status = execute_command(argc, argv);
+        // Restaurer les descripteurs après la commande
+        restore_fds();
 
-    restore_fds();
-
-    return status;
+        return WEXITSTATUS(status);
+    } else {
+        perror("fork");
+        return 1;
+    }
+    return 0; // Ne devrait pas être atteint
 }
 
 int execute_builtin(int argc, char **argv)
@@ -170,43 +145,4 @@ int execute_builtin(int argc, char **argv)
         return builtin_exit(argc, argv);
     }
     return -1; // Indique que ce n'est pas un builtin.
-}
-
-int execute_command(int argc, char **argv)
-{
-    int builtin_status = execute_builtin(argc, argv);
-    if (builtin_status != -1)
-    {
-        return builtin_status; // Retourne immédiatement pour les builtins
-    }
-
-    pid_t pid = fork();
-    if (pid == 0)
-    {
-        if (execvp(argv[0], argv) == -1)
-        {
-            perror("42sh");
-            exit(127); // Retourne 127 en cas d'échec d'exécution
-        }
-    }
-    else if (pid > 0)
-    {
-        int status;
-        waitpid(pid, &status, 0);
-        if (WIFEXITED(status))
-        {
-            return WEXITSTATUS(
-                status); // Retourne le statut de sortie du processus
-        }
-        else
-        {
-            return 1; // Retourne 1 en cas de problème
-        }
-    }
-    else
-    {
-        perror("fork");
-        return 1; // Retourne 1 si le fork échoue
-    }
-    return 0; // Défaut (ne devrait pas être atteint)
 }

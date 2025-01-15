@@ -32,6 +32,7 @@ enum redirection_type
 
 extern int last_exit_status;
 
+
 struct redirection
 {
     enum redirection_type type;

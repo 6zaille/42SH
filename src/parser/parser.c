@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "parser.h"
+#include "ast.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,6 +67,27 @@ static char **append_arg(char **args, const char *arg)
     return new_args;
 }
 
+static struct redirection *parse_redirection(struct lexer *lexer) {
+    struct token *tok = lexer_next_token(lexer);
+    if (!tok || (tok->type != TOKEN_REDIRECT_IN && tok->type != TOKEN_REDIRECT_OUT)) {
+        lexer_push_back(lexer, tok);
+        return NULL;
+    }
+
+    struct token *filename = lexer_next_token(lexer);
+    if (!filename || filename->type != TOKEN_WORD) {
+        fprintf(stderr, "Syntax error: expected a filename after redirection\n");
+        return NULL;
+    }
+
+    struct redirection *redir = malloc(sizeof(*redir));
+    redir->type = (tok->type == TOKEN_REDIRECT_IN) ? REDIR_IN : REDIR_OUT;
+    redir->filename = strdup(filename->value);
+    token_free(tok);
+    token_free(filename);
+    return redir;
+}
+
 static struct ast *parse_simple_command(struct lexer *lexer)
 {
     struct ast *cmd_node = ast_create(AST_SIMPLE_COMMAND);
@@ -79,14 +101,35 @@ static struct ast *parse_simple_command(struct lexer *lexer)
         return NULL;
     }
     data->args = NULL;
+    data->redirections = NULL;
+    data->redirection_count = 0;
 
     struct token *tok = lexer_next_token(lexer);
-    while (tok && tok->type == TOKEN_WORD)
+    while (tok && (tok->type == TOKEN_WORD || (tok->type >= TOKEN_REDIRECT_IN && tok->type <= TOKEN_REDIRECT_RW)))
     {
-        data->args = append_arg(data->args, tok->value);
+        if (tok->type == TOKEN_WORD)
+        {
+            data->args = append_arg(data->args, tok->value);
+        }
+        else
+        {
+            struct redirection *redir = parse_redirection(lexer);
+            if (redir)
+            {
+                data->redirections = realloc(data->redirections, sizeof(*data->redirections) * (data->redirection_count + 1));
+                if (!data->redirections)
+                {
+                    perror("realloc");
+                    exit(EXIT_FAILURE);
+                }
+                data->redirections[data->redirection_count++] = *redir;
+                free(redir);
+            }
+        }
         token_free(tok);
         tok = lexer_next_token(lexer);
     }
+
     lexer_push_back(lexer, tok);
     cmd_node->data = data;
     return cmd_node;
