@@ -23,6 +23,9 @@ rm -rf src/42sh-main.o;
 rm tests/Makefile.in;
 rm tests/Makefile;
 rm test-driver;
+rm file.txt;
+rm input.txt;
+rm output.txt;
 rm clean;
 clear;
 echo -e "🐒🐒🐒🐒🐒 XingXing a mangé toutes les trash files 🐒🐒🐒🐒🐒"
