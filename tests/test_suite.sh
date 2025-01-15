@@ -186,7 +186,7 @@ run_test "Test 35: Multiple comments in script" \
 echo "====================================="
 PERCENT_PASSED=$((PASSED_TESTS * 100 / TOTAL_TESTS))
 
-if [ $PERCENT_PASSED -ge 85 ]; then
+if [ $PERCENT_PASSED -ge 90 ]; then
     COLOR="\033[32m" # Vert
 elif [ $PERCENT_PASSED -ge 50 ]; then
     COLOR="\033[33m" # Jaune
