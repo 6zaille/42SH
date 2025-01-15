@@ -17,13 +17,14 @@ enum token_type
     TOKEN_EOF,
     TOKEN_ERROR,
     TOKEN_PIPE,
-    TOKEN_REDIRECT_IN,      // <
-    TOKEN_REDIRECT_OUT,     // >
-    TOKEN_REDIRECT_APPEND,  // >>
+    TOKEN_REDIRECT_IN, // <
+    TOKEN_REDIRECT_OUT, // >
+    TOKEN_REDIRECT_APPEND, // >>
     TOKEN_REDIRECT_DUP_OUT, // >&
-    TOKEN_REDIRECT_DUP_IN,  // <&
+    TOKEN_REDIRECT_DUP_IN, // <&
     TOKEN_REDIRECT_CLOBBER, // >|
-    TOKEN_REDIRECT_RW       // <>
+    TOKEN_REDIRECT_RW, // <>
+    TOKEN_NEGATION
 };
 
 struct token
