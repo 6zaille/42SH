@@ -44,6 +44,14 @@ static void save_fd(int fd)
     saved_fd_count++;
 }
 
+static void redirect_fd(int old_fd, int new_fd) {
+    save_fd(new_fd);
+    if (dup2(old_fd, new_fd) == -1) {
+        perror("dup2");
+        exit(EXIT_FAILURE);
+    }
+}
+
 static void restore_fds()
 {
     for (size_t i = 0; i < saved_fd_count; i++)
@@ -59,58 +67,80 @@ static void restore_fds()
     saved_fd_count = 0;
 }
 
-static void apply_redirection(const char *filename, int fd, int flags, int mode)
-{
+static void apply_redirection(const char *filename, int fd, int flags, int mode) {
     save_fd(fd);
     int new_fd = open(filename, flags, mode);
-    if (new_fd == -1)
-    {
+    if (new_fd == -1) {
         perror("open");
         exit(EXIT_FAILURE);
     }
-    if (dup2(new_fd, fd) == -1)
-    {
+    if (dup2(new_fd, fd) == -1) {
         perror("dup2");
         exit(EXIT_FAILURE);
     }
     close(new_fd);
 }
 
-int execute_command(int argc, char **argv)
-{
-    // Vérifiez les redirections dans les arguments
+int execute_command(int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], ">") == 0) {
-            // Redirection de sortie
             if (i + 1 < argc) {
                 apply_redirection(argv[i + 1], STDOUT_FILENO, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                argv[i] = NULL; // Terminez la liste d'arguments ici
+                argv[i] = NULL;
                 break;
             }
         } else if (strcmp(argv[i], ">>") == 0) {
-            // Redirection d'ajout
             if (i + 1 < argc) {
                 apply_redirection(argv[i + 1], STDOUT_FILENO, O_WRONLY | O_CREAT | O_APPEND, 0644);
-                argv[i] = NULL; // Terminez la liste d'arguments ici
+                argv[i] = NULL;
+                break;
+            }
+        } else if (strcmp(argv[i], "<") == 0) {
+            if (i + 1 < argc) {
+                apply_redirection(argv[i + 1], STDIN_FILENO, O_RDONLY, 0);
+                argv[i] = NULL;
+                break;
+            }
+        } else if (strcmp(argv[i], "2>") == 0) {
+            if (i + 1 < argc) {
+                apply_redirection(argv[i + 1], STDERR_FILENO, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                argv[i] = NULL;
+                break;
+            }
+        } else if (strcmp(argv[i], "<&") == 0) {
+            if (i + 1 < argc) {
+                int fd = atoi(argv[i + 1]);
+                redirect_fd(fd, STDIN_FILENO);
+                argv[i] = NULL;
+                break;
+            }
+        } else if (strcmp(argv[i], ">&") == 0) {
+            if (i + 1 < argc) {
+                int fd = atoi(argv[i + 1]);
+                redirect_fd(fd, STDOUT_FILENO);
+                argv[i] = NULL;
+                break;
+            }
+        } else if (strcmp(argv[i], "<>") == 0) {
+            if (i + 1 < argc) {
+                apply_redirection(argv[i + 1], STDIN_FILENO, O_RDWR | O_CREAT, 0644);
+                argv[i] = NULL;
                 break;
             }
         }
     }
 
-    // Exécutez la commande
     pid_t pid = fork();
     if (pid == 0) {
-        // Enfant
+        // enfant
         if (execvp(argv[0], argv) == -1) {
             perror("42sh");
             exit(EXIT_FAILURE);
         }
     } else if (pid > 0) {
-        // Parent
+        // parent
         int status;
         waitpid(pid, &status, 0);
-
-        // Restaurer les descripteurs après la commande
         restore_fds();
 
         return WEXITSTATUS(status);
@@ -118,8 +148,11 @@ int execute_command(int argc, char **argv)
         perror("fork");
         return 1;
     }
-    return 0; // Ne devrait pas être atteint
+
+    return 0;
 }
+
+
 
 int execute_builtin(int argc, char **argv)
 {

@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "utils.h"
 
 #include <ctype.h>
@@ -7,7 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define _POSIX_C_SOURCE 200809L
+
 
 int verbose_mode = 0;
 static int last_exit_status = 0;
