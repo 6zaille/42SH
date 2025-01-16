@@ -4,13 +4,10 @@
 #include "lexer.h"
 #include "token.h"
 
-void print_token(struct token *tok)
+void print_token(struct token tok)
 {
-    if (!tok)
-        return;
-
     const char *type_str;
-    switch (tok->type)
+    switch (tok.type)
     {
     case TOKEN_IF:
         type_str = "TOKEN_IF";
@@ -51,7 +48,7 @@ void print_token(struct token *tok)
     }
 
     printf("Token: { type: %s, value: %s }\n", type_str,
-           tok->value ? tok->value : "NULL");
+           tok.value ? tok.value : "NULL");
 }
 
 int main()
@@ -72,17 +69,13 @@ int main()
         return EXIT_FAILURE;
     }
 
-    struct token *tok;
-    while ((tok = lexer_next_token(lexer)))
+    struct token tok;
+    do
     {
+        tok = lexer_next_token(lexer);
         print_token(tok);
-        if (tok->type == TOKEN_EOF)
-        {
-            token_free(tok);
-            break;
-        }
-        token_free(tok);
-    }
+        free(tok.value);
+    } while (tok.type != TOKEN_EOF);
 
     lexer_destroy(lexer);
     return EXIT_SUCCESS;

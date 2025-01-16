@@ -69,23 +69,24 @@ static char **append_arg(char **args, const char *arg)
 }
 
 static struct redirection *parse_redirection(struct lexer *lexer) {
-    struct token *tok = lexer_next_token(lexer);
-    if (!tok || (tok->type != TOKEN_REDIRECT_IN && tok->type != TOKEN_REDIRECT_OUT)) {
-        lexer_push_back(lexer, tok);
+    struct token tok = lexer_peek(lexer);
+    if (tok.type != TOKEN_REDIRECT_IN && tok.type != TOKEN_REDIRECT_OUT)
+    {
         return NULL;
     }
+    lexer_pop(lexer);
 
-    struct token *filename = lexer_next_token(lexer);
-    if (!filename || filename->type != TOKEN_WORD) {
+    struct token filename = lexer_peek(lexer);
+    if (filename.type != TOKEN_WORD)
+    {
         fprintf(stderr, "Syntax error: expected a filename after redirection\n");
         return NULL;
     }
+    lexer_pop(lexer);
 
     struct redirection *redir = malloc(sizeof(*redir));
-    redir->type = (tok->type == TOKEN_REDIRECT_IN) ? REDIR_IN : REDIR_OUT;
-    redir->filename = strdup(filename->value);
-    token_free(tok);
-    token_free(filename);
+    redir->type = (tok.type == TOKEN_REDIRECT_IN) ? REDIR_IN : REDIR_OUT;
+    redir->filename = strdup(filename.value);
     return redir;
 }
 
@@ -105,12 +106,13 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     data->redirections = NULL;
     data->redirection_count = 0;
 
-    struct token *tok = lexer_next_token(lexer);
-    while (tok && (tok->type == TOKEN_WORD || (tok->type >= TOKEN_REDIRECT_IN && tok->type <= TOKEN_REDIRECT_RW)))
+    struct token tok = lexer_peek(lexer);
+    while (tok.type == TOKEN_WORD || (tok.type >= TOKEN_REDIRECT_IN && tok.type <= TOKEN_REDIRECT_RW))
     {
-        if (tok->type == TOKEN_WORD)
+        lexer_pop(lexer);
+        if (tok.type == TOKEN_WORD)
         {
-            data->args = append_arg(data->args, tok->value);
+            data->args = append_arg(data->args, tok.value);
         }
         else
         {
@@ -127,11 +129,9 @@ static struct ast *parse_simple_command(struct lexer *lexer)
                 free(redir);
             }
         }
-        token_free(tok);
-        tok = lexer_next_token(lexer);
+        tok = lexer_peek(lexer);
     }
 
-    lexer_push_back(lexer, tok);
     cmd_node->data = data;
     return cmd_node;
 }
@@ -147,17 +147,14 @@ static struct ast *parse_command_list(struct lexer *lexer)
 
     while (1)
     {
-        struct token *tok = lexer_next_token(lexer);
-        if (!tok || tok->type == TOKEN_EOF || tok->type == TOKEN_NEWLINE)
+        struct token tok = lexer_peek(lexer);
+        if (tok.type == TOKEN_EOF || tok.type == TOKEN_NEWLINE)
         {
-            token_free(tok);
             break;
         }
-        lexer_push_back(lexer, tok);
         struct ast *cmd = parse_simple_command(lexer);
         if (!cmd)
         {
-            token_free(tok);
             break;
         }
 
@@ -169,20 +166,11 @@ static struct ast *parse_command_list(struct lexer *lexer)
         }
         children[count++] = cmd;
 
-        tok = lexer_next_token(lexer);
-        if (tok->type == TOKEN_SEMICOLON)
+        tok = lexer_peek(lexer);
+        if (tok.type == TOKEN_SEMICOLON || tok.type == TOKEN_NEWLINE)
         {
-            token_free(tok);
-            continue;
+            lexer_pop(lexer);
         }
-        if (tok->type == TOKEN_NEWLINE)
-        {
-            token_free(tok);
-            continue;
-        }
-
-        lexer_push_back(lexer, tok);
-        break;
     }
 
     list_node->children = children;
@@ -190,7 +178,7 @@ static struct ast *parse_command_list(struct lexer *lexer)
     return list_node;
 }
 
-static struct ast *parse_if_condition(struct lexer *lexer, struct token *tok)
+static struct ast *parse_if_condition(struct lexer *lexer)
 {
     struct ast *condition = ast_create(AST_LIST);
     condition->children = NULL;
@@ -201,7 +189,6 @@ static struct ast *parse_if_condition(struct lexer *lexer, struct token *tok)
         struct ast *cmd = parse_command_list(lexer);
         if (!cmd)
         {
-            token_free(tok);
             ast_free(condition);
             return NULL;
         }
@@ -211,18 +198,17 @@ static struct ast *parse_if_condition(struct lexer *lexer, struct token *tok)
                     sizeof(struct ast *) * (condition->children_count + 1));
         condition->children[condition->children_count++] = cmd;
 
-        tok = lexer_next_token(lexer);
-        if (!tok || tok->type == TOKEN_THEN)
+        struct token tok = lexer_peek(lexer);
+        if (tok.type == TOKEN_THEN)
             break;
 
-        if (tok->type != TOKEN_SEMICOLON && tok->type != TOKEN_NEWLINE)
+        if (tok.type != TOKEN_SEMICOLON && tok.type != TOKEN_NEWLINE)
         {
-            token_free(tok);
             ast_free(condition);
             return NULL;
         }
 
-        token_free(tok);
+        lexer_pop(lexer);
     }
 
     return condition;
@@ -230,17 +216,25 @@ static struct ast *parse_if_condition(struct lexer *lexer, struct token *tok)
 
 static struct ast *parse_if_statement(struct lexer *lexer)
 {
-    struct token *tok = lexer_next_token(lexer);
-    if (!tok || tok->type != TOKEN_IF)
+    struct token tok = lexer_peek(lexer);
+    if (tok.type != TOKEN_IF)
     {
         return NULL;
     }
 
-    struct ast *condition = parse_if_condition(lexer, tok);
+    struct ast *condition = parse_if_condition(lexer);
     if (!condition)
     {
         return NULL;
     }
+
+    tok = lexer_peek(lexer);
+    if (tok.type != TOKEN_THEN)
+    {
+        ast_free(condition);
+        return NULL;
+    }
+    lexer_pop(lexer);
 
     struct ast *then_branch = parse_command_list(lexer);
     if (!then_branch)
@@ -250,9 +244,10 @@ static struct ast *parse_if_statement(struct lexer *lexer)
     }
 
     struct ast *else_branch = NULL;
-    tok = lexer_next_token(lexer);
-    if (tok && tok->type == TOKEN_ELSE)
+    tok = lexer_peek(lexer);
+    if (tok.type == TOKEN_ELSE)
     {
+        lexer_pop(lexer);
         else_branch = parse_command_list(lexer);
         if (!else_branch)
         {
@@ -260,35 +255,28 @@ static struct ast *parse_if_statement(struct lexer *lexer)
             ast_free(then_branch);
             return NULL;
         }
-        tok = lexer_next_token(lexer);
     }
-
-    if (!tok || tok->type != TOKEN_FI)
+    tok = lexer_peek(lexer);
+    if (tok.type != TOKEN_FI)
     {
-        token_free(tok);
         ast_free(condition);
         ast_free(then_branch);
         ast_free(else_branch);
         return NULL;
     }
-
-    token_free(tok);
+    lexer_pop(lexer);
     return ast_create_if(condition, then_branch, else_branch);
 }
 
 struct ast *parser_parse(struct lexer *lexer)
 {
-    struct token *tok = lexer_next_token(lexer);
-    if (!tok)
-        return NULL;
+    struct token tok = lexer_peek(lexer);
 
-    if (tok->type == TOKEN_IF)
+    if (tok.type == TOKEN_IF)
     {
-        lexer_push_back(lexer, tok);
         return parse_if_statement(lexer);
     }
 
-    lexer_push_back(lexer, tok);
     return parse_pipeline(lexer);
 }
 
@@ -344,19 +332,30 @@ struct ast *parse_pipeline(struct lexer *lexer)
         commands = realloc(commands, (count + 1) * sizeof(struct ast *));
         commands[count++] = command;
 
-        struct token *tok = lexer_next_token(lexer);
-        if (!tok || tok->type != TOKEN_PIPE)
+        struct token tok = lexer_peek(lexer);
+        if (tok.type != TOKEN_PIPE)
         {
-            lexer_push_back(lexer, tok);
             break;
         }
-        if (tok->type == TOKEN_NEGATION)
+        lexer_pop(lexer);
+
+        tok = lexer_peek(lexer);
+        if (tok.type == TOKEN_NEGATION)
         {
+            lexer_pop(lexer);
             struct ast *negation_node = ast_create(AST_NEGATION);
+            negation_node->children = malloc(sizeof(struct ast *));
+            if (!negation_node->children)
+            {
+                perror("malloc");
+                free(negation_node);
+                ast_free(pipeline_node);
+                return NULL;
+            }
             negation_node->children[0] = pipeline_node;
+            negation_node->children_count = 1;
             return negation_node;
         }
-        token_free(tok);
     }
 
     pipeline_node->children = commands;

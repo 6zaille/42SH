@@ -8,19 +8,6 @@
 
 #include "token.h"
 
-static struct token *create_token(enum token_type type, const char *value)
-{
-    struct token *tok = malloc(sizeof(struct token));
-    if (!tok)
-    {
-        perror("malloc");
-        return NULL;
-    }
-    tok->type = type;
-    tok->value = value ? strdup(value) : NULL;
-    return tok;
-}
-
 static void skip_whitespace(struct lexer *lexer)
 {
     while (lexer->input[lexer->pos] == ' ' || lexer->input[lexer->pos] == '\t')
@@ -31,9 +18,9 @@ static void skip_whitespace(struct lexer *lexer)
 
 static void skip_comment(struct lexer *lexer)
 {
-    if (lexer->input[lexer->pos] == '#')
+    if (lexer->input[lexer->pos] == '#') // Si on rencontre un commentaire
     {
-        while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\n')
+        while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\n') // On avance jusqu'à la fin de la ligne
         {
             lexer->pos++;
         }
@@ -73,34 +60,23 @@ struct lexer *lexer_init(const char *input)
     }
     lexer->input = input;
     lexer->pos = 0;
-    lexer->pushed_back_token = NULL;
+    lexer->current_tok.type = TOKEN_EOF;
+    lexer->current_tok.value = NULL;
     return lexer;
 }
 
-void lexer_push_back(struct lexer *lexer, struct token *token)
-{
-    if (lexer->pushed_back_token)
-    {
-        token_free(lexer->pushed_back_token);
-    }
-    lexer->pushed_back_token = token;
-}
-
-static struct token *handle_word_token(struct lexer *lexer)
+static struct token handle_word_token(struct lexer *lexer)
 {
     char *buffer = malloc(strlen(lexer->input) + 1);
     size_t buf_index = 0;
 
-    // CHANGEMENT ICI J'AI RETIRE LES CHECK POUR "//" POSSIBLE MODIFICATION DU
-    // COMPORTEMENT AVEC LES FICHIER TEXTE
     while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos])
            && lexer->input[lexer->pos] != ';'
            && lexer->input[lexer->pos] != '\n')
     {
-        if (lexer->input[lexer->pos] == '\''
-            && is_surrounded_by_letters(lexer->input, lexer->pos))
+        if (lexer->input[lexer->pos] == '\'' && is_surrounded_by_letters(lexer->input, lexer->pos))
         {
-            lexer->pos++; // Skip the quote
+            lexer->pos++;
             continue;
         }
         buffer[buf_index++] = lexer->input[lexer->pos++];
@@ -108,36 +84,18 @@ static struct token *handle_word_token(struct lexer *lexer)
 
     buffer[buf_index] = '\0';
     enum token_type type = check_keyword(buffer);
-    struct token *tok;
-
-    if (type != TOKEN_WORD)
-    {
-        tok = create_token(type, NULL);
-    }
-    else
-    {
-        tok = create_token(TOKEN_WORD, buffer);
-    }
-
-    free(buffer);
+    struct token tok = {type, buffer};
     return tok;
 }
 
-struct token *lexer_next_token(struct lexer *lexer)
+struct token lexer_next_token(struct lexer *lexer)
 {
-    if (lexer->pushed_back_token)
-    {
-        struct token *tok = lexer->pushed_back_token;
-        lexer->pushed_back_token = NULL;
-        return tok;
-    }
-
     skip_whitespace(lexer);
     skip_comment(lexer);
 
-    if (lexer->input[lexer->pos] == '\0') // End of input
+    if (lexer->input[lexer->pos] == '\0')
     {
-        return create_token(TOKEN_EOF, NULL);
+        return (struct token){TOKEN_EOF, NULL};
     }
 
     char c = lexer->input[lexer->pos];
@@ -145,60 +103,57 @@ struct token *lexer_next_token(struct lexer *lexer)
     if (c == '|')
     {
         lexer->pos++;
-        return create_token(TOKEN_PIPE, "|");
+        return (struct token){TOKEN_PIPE, strdup("|")};
     }
-
-    else if (c == '\'') // Handle single quotes
+    else if (c == '\'')
     {
-        lexer->pos++; // Skip the quote
+        lexer->pos++;
         return lexer_next_token(lexer);
     }
-    else if (c == '\\') // Handle backslashes followed by 'n'
+    else if (c == '\\')
     {
         lexer->pos++;
         if (lexer->input[lexer->pos] == 'n')
         {
             lexer->pos++;
-            return create_token(TOKEN_NEWLINE, NULL);
+            return (struct token){TOKEN_NEWLINE, NULL};
         }
     }
-    else if (c == '\n') // Ignore newlines
+    else if (c == '\n')
     {
         lexer->pos++;
-        return create_token(TOKEN_NEWLINE, NULL);
+        return (struct token){TOKEN_NEWLINE, NULL};
     }
-    else if (c == ';') // Handle semicolons
+    else if (c == ';')
     {
         lexer->pos++;
-        return create_token(TOKEN_SEMICOLON, NULL);
+        return (struct token){TOKEN_SEMICOLON, strdup(";")};
     }
-    else if (c == '!')
-    {
-        lexer->pos++;
-        return create_token(TOKEN_NEGATION, "!");
-    }
-    else // Handle words
+    else
     {
         return handle_word_token(lexer);
     }
 
-    return create_token(TOKEN_ERROR, "Unexpected character");
+    return (struct token){TOKEN_ERROR, strdup("char error")};
 }
 
-void token_free(struct token *token)
+struct token lexer_peek(struct lexer *lexer)
 {
-    if (token)
-    {
-        free(token->value);
-        free(token);
-    }
+    size_t saved_pos = lexer->pos;
+    struct token next_tok = lexer_next_token(lexer);
+    lexer->pos = saved_pos;
+    return next_tok;
+}
+
+struct token lexer_pop(struct lexer *lexer)
+{
+    struct token next_tok = lexer_next_token(lexer);
+    lexer->current_tok = next_tok;
+    return next_tok;
 }
 
 void lexer_destroy(struct lexer *lexer)
 {
-    if (lexer->pushed_back_token)
-    {
-        token_free(lexer->pushed_back_token);
-    }
+    free(lexer->current_tok.value);
     free(lexer);
 }

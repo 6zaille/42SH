@@ -7,19 +7,19 @@ struct lexer
 {
     const char *input;
     size_t pos;
-    struct token *pushed_back_token;
+    struct token current_tok;
 };
 
 struct lexer *lexer_init(const char *input);
 
 void lexer_destroy(struct lexer *lexer);
 
-struct token *lexer_next_token(struct lexer *lexer);
-
-void token_free(struct token *token);
+struct token lexer_next_token(struct lexer *lexer);
 
 enum token_type check_keyword(const char *word);
 
-void lexer_push_back(struct lexer *lexer, struct token *token);
+struct token lexer_peek(struct lexer *lexer);
+
+struct token lexer_pop(struct lexer *lexer);
 
 #endif /* !LEXER_H */
