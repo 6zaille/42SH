@@ -140,7 +140,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        //ast_pretty_print(ast, 0);
+        // ast_pretty_print(ast, 0);
         ast_eval(ast);
     }
 
