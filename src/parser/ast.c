@@ -124,7 +124,7 @@ void ast_eval(struct ast *node)
     }
 
     default:
-        fprintf(stderr, "Unsupported AST node type: %d\n", node->type);
+        fprintf(stderr, "le type de noeud n'est pas correct %d\n", node->type);
         break;
     }
 }
