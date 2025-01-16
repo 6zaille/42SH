@@ -183,6 +183,35 @@ static struct ast *parse_command_or_pipeline(struct lexer *lexer) {
 }
 
 
+static const char *token_type_to_string(enum token_type type)
+{
+    switch (type)
+    {
+    case TOKEN_IF:
+        return "if";
+    case TOKEN_THEN:
+        return "then";
+    case TOKEN_ELSE:
+        return "else";
+    case TOKEN_FI:
+        return "fi";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+static void print_token_names(struct lexer *lexer)
+{
+    struct token tok;
+    tok = lexer_peek(lexer);
+    while(tok.type != TOKEN_EOF && tok.type != TOKEN_NEWLINE)
+    {
+        printf("%s\n", token_type_to_string(tok.type));
+        free(tok.value);
+        tok = lexer_pop(lexer);
+    }
+}
+
 static struct ast *parse_command_list(struct lexer *lexer) {
     struct ast *list_node = ast_create(AST_LIST);
     if (!list_node) return NULL;
@@ -213,7 +242,8 @@ static struct ast *parse_command_list(struct lexer *lexer) {
             free(tok.value);
             break;
         } else {
-            fprintf(stderr, "token anormal '%s'\n", tok.value);
+            print_token_names(lexer);
+            fflush(stdout);
             ast_free(list_node);
             return NULL;
         }
