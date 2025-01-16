@@ -21,9 +21,7 @@ static void skip_comment(struct lexer *lexer)
 {
     if (lexer->input[lexer->pos] == '#')
     {
-        while (lexer->input[lexer->pos]
-               && lexer->input[lexer->pos]
-                   != '\n')
+        while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\n')
         {
             lexer->pos++;
         }
@@ -97,8 +95,6 @@ static struct token *handle_word_token(struct lexer *lexer)
     enum token_type type = check_keyword(buffer);
     return token_init(type, buffer);
 }
-
-
 
 struct token *lexer_next_token(struct lexer *lexer)
 {
