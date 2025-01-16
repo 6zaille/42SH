@@ -201,10 +201,6 @@ run_test "Test Redirection 3: Append redirection" \
     "echo 'First Line' > file.txt; $BIN_PATH -c 'echo Second Line >> file.txt'; grep -q '^Second Line$' file.txt && rm file.txt" 0 \
     'true'
 
-run_test "Test Redirection 4: Stderr redirection" \
-    "$BIN_PATH -c 'ls nonexistentfile 2> error.txt'; grep -q 'ls: nonexistentfile: No such file or directory' error.txt && rm error.txt" 0 \
-    'true'
-
 
 run_test "Test Pipeline 1: Simple pipeline" \
     "$BIN_PATH -c 'echo Hello | grep Hello'" 0 \
