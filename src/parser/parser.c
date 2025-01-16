@@ -136,44 +136,88 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     return cmd_node;
 }
 
-static struct ast *parse_command_list(struct lexer *lexer)
-{
-    struct ast *list_node = ast_create(AST_LIST);
-    if (!list_node)
-        return NULL;
 
-    struct ast **children = NULL;
+static struct ast *parse_command_or_pipeline(struct lexer *lexer) {
+    struct ast *pipeline_node = ast_create(AST_PIPELINE);
+    if (!pipeline_node) return NULL;
+
+    struct ast **commands = NULL;
     size_t count = 0;
 
-    while (1)
-    {
+    while (1) {
+        struct ast *command_node = parse_simple_command(lexer);
+        if (!command_node) {
+            ast_free(pipeline_node);
+            return NULL;
+        }
+
+        commands = realloc(commands, sizeof(struct ast *) * (count + 1));
+        if (!commands) {
+            ast_free(command_node);
+            ast_free(pipeline_node);
+            return NULL;
+        }
+
+        commands[count++] = command_node;
+
         struct token tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_EOF || tok.type == TOKEN_NEWLINE)
-        {
+        if (tok.type == TOKEN_PIPE) {
+            lexer_pop(lexer); // Consume the pipe
+        } else {
             break;
-        }
-        struct ast *cmd = parse_simple_command(lexer);
-        if (!cmd)
-        {
-            break;
-        }
-
-        children = safe_realloc(children, sizeof(struct ast *) * (count + 1));
-        if (!children)
-        {
-            ast_free(cmd);
-            break;
-        }
-        children[count++] = cmd;
-
-        tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_SEMICOLON || tok.type == TOKEN_NEWLINE)
-        {
-            lexer_pop(lexer);
         }
     }
 
-    list_node->children = children;
+    pipeline_node->children = commands;
+    pipeline_node->children_count = count;
+
+    if (count == 1) {
+        struct ast *single_command = commands[0];
+        free(pipeline_node->children);
+        free(pipeline_node);
+        return single_command;
+    }
+
+    return pipeline_node;
+}
+
+
+static struct ast *parse_command_list(struct lexer *lexer) {
+    struct ast *list_node = ast_create(AST_LIST);
+    if (!list_node) return NULL;
+
+    struct ast **commands = NULL;
+    size_t count = 0;
+
+    while (1) {
+        struct ast *command_node = parse_command_or_pipeline(lexer);
+        if (!command_node) {
+            ast_free(list_node);
+            return NULL;
+        }
+
+        commands = realloc(commands, sizeof(struct ast *) * (count + 1));
+        if (!commands) {
+            ast_free(command_node);
+            ast_free(list_node);
+            return NULL;
+        }
+
+        commands[count++] = command_node;
+
+        struct token tok = lexer_peek(lexer);
+        if (tok.type == TOKEN_SEMICOLON) {
+            lexer_pop(lexer); // Consume the semicolon
+        } else if (tok.type == TOKEN_EOF || tok.type == TOKEN_NEWLINE) {
+            break;
+        } else {
+            fprintf(stderr, "Syntax error: unexpected token '%s'\n", tok.value);
+            ast_free(list_node);
+            return NULL;
+        }
+    }
+
+    list_node->children = commands;
     list_node->children_count = count;
     return list_node;
 }
@@ -268,16 +312,15 @@ static struct ast *parse_if_statement(struct lexer *lexer)
     return ast_create_if(condition, then_branch, else_branch);
 }
 
-struct ast *parser_parse(struct lexer *lexer)
-{
+
+struct ast *parser_parse(struct lexer *lexer) {
     struct token tok = lexer_peek(lexer);
 
-    if (tok.type == TOKEN_IF)
-    {
+    if (tok.type == TOKEN_IF) {
         return parse_if_statement(lexer);
     }
 
-    return parse_pipeline(lexer);
+    return parse_command_list(lexer);
 }
 
 void ast_free(struct ast *node)
