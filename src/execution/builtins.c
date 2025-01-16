@@ -68,7 +68,6 @@ int builtin_echo(int argc, char **argv)
                         putchar('\\');
                         break;
                     default:
-                        putchar('\\');
                         putchar(*p);
                         break;
                     }

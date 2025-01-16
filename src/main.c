@@ -134,7 +134,6 @@ int main(int argc, char **argv)
 
     struct ast *ast = parser_parse(lexer);
     lexer_destroy(lexer);
-    ast_pretty_print(ast, 0);
     if (pretty_print)
     {
         ast_pretty_print(ast, 0);

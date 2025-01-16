@@ -126,9 +126,15 @@ int execute_command(int argc, char **argv) {
     pid_t pid = fork();
     if (pid == 0) {
         // enfant
-        if (execvp(argv[0], argv) == -1) {
-            perror("42sh");
-            exit(EXIT_FAILURE);
+        int argc = 0;
+        while (argv[argc] != NULL) {
+            argc++;
+        }
+        if (execute_builtin(argc,argv) == -1) {
+            if (execvp(argv[0], argv) == -1) {
+                perror("42sh");
+                exit(EXIT_FAILURE);
+            }
         }
     } else if (pid > 0) {
         // parent

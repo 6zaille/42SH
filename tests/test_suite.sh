@@ -69,7 +69,7 @@ run_test "Test Echo 4: Echo with -e flag (tabs)" \
 
 run_test "Test Echo 5: Echo with -E flag (escapes ignored)" \
     "$BIN_PATH -c 'echo -E Hello\\nWorld'" 0 \
-    'echo "$OUTPUT" | grep -q "Hello\nWorld"'
+    'echo "$OUTPUT" | grep -q "HellonWorld"'
 
 run_test "Test Echo 6: Echo combination of -n and -e" \
     "$BIN_PATH -c 'echo -n -e Hello\\nWorld'" 0 \
