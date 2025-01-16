@@ -19,11 +19,11 @@ static void skip_whitespace(struct lexer *lexer)
 
 static void skip_comment(struct lexer *lexer)
 {
-    if (lexer->input[lexer->pos] == '#') // Si on rencontre un commentaire
+    if (lexer->input[lexer->pos] == '#')
     {
         while (lexer->input[lexer->pos]
                && lexer->input[lexer->pos]
-                   != '\n') // On avance jusqu'à la fin de la ligne
+                   != '\n')
         {
             lexer->pos++;
         }
