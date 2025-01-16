@@ -1,7 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "parser.h"
-#include "ast.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,7 +67,8 @@ static char **append_arg(char **args, const char *arg)
     return new_args;
 }
 
-static struct redirection *parse_redirection(struct lexer *lexer) {
+static struct redirection *parse_redirection(struct lexer *lexer)
+{
     struct token tok = lexer_peek(lexer);
     if (tok.type != TOKEN_REDIRECT_IN && tok.type != TOKEN_REDIRECT_OUT)
     {
@@ -79,7 +79,8 @@ static struct redirection *parse_redirection(struct lexer *lexer) {
     struct token filename = lexer_peek(lexer);
     if (filename.type != TOKEN_WORD)
     {
-        fprintf(stderr, "Syntax error: expected a filename after redirection\n");
+        fprintf(stderr,
+                "Syntax error: expected a filename after redirection\n");
         return NULL;
     }
     lexer_pop(lexer);
@@ -107,7 +108,8 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     data->redirection_count = 0;
 
     struct token tok = lexer_peek(lexer);
-    while (tok.type == TOKEN_WORD || (tok.type >= TOKEN_REDIRECT_IN && tok.type <= TOKEN_REDIRECT_RW))
+    while (tok.type == TOKEN_WORD
+           || (tok.type >= TOKEN_REDIRECT_IN && tok.type <= TOKEN_REDIRECT_RW))
     {
         lexer_pop(lexer);
         if (tok.type == TOKEN_WORD)
@@ -119,7 +121,10 @@ static struct ast *parse_simple_command(struct lexer *lexer)
             struct redirection *redir = parse_redirection(lexer);
             if (redir)
             {
-                data->redirections = realloc(data->redirections, sizeof(*data->redirections) * (data->redirection_count + 1));
+                data->redirections =
+                    realloc(data->redirections,
+                            sizeof(*data->redirections)
+                                * (data->redirection_count + 1));
                 if (!data->redirections)
                 {
                     perror("realloc");
@@ -136,23 +141,27 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     return cmd_node;
 }
 
-
-static struct ast *parse_command_or_pipeline(struct lexer *lexer) {
+static struct ast *parse_command_or_pipeline(struct lexer *lexer)
+{
     struct ast *pipeline_node = ast_create(AST_PIPELINE);
-    if (!pipeline_node) return NULL;
+    if (!pipeline_node)
+        return NULL;
 
     struct ast **commands = NULL;
     size_t count = 0;
 
-    while (1) {
+    while (1)
+    {
         struct ast *command_node = parse_simple_command(lexer);
-        if (!command_node) {
+        if (!command_node)
+        {
             ast_free(pipeline_node);
             return NULL;
         }
 
         commands = realloc(commands, sizeof(struct ast *) * (count + 1));
-        if (!commands) {
+        if (!commands)
+        {
             ast_free(command_node);
             ast_free(pipeline_node);
             return NULL;
@@ -161,9 +170,12 @@ static struct ast *parse_command_or_pipeline(struct lexer *lexer) {
         commands[count++] = command_node;
 
         struct token tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_PIPE) {
+        if (tok.type == TOKEN_PIPE)
+        {
             lexer_pop(lexer); // Consume the pipe
-        } else {
+        }
+        else
+        {
             break;
         }
     }
@@ -171,7 +183,8 @@ static struct ast *parse_command_or_pipeline(struct lexer *lexer) {
     pipeline_node->children = commands;
     pipeline_node->children_count = count;
 
-    if (count == 1) {
+    if (count == 1)
+    {
         struct ast *single_command = commands[0];
         free(pipeline_node->children);
         free(pipeline_node);
@@ -181,23 +194,27 @@ static struct ast *parse_command_or_pipeline(struct lexer *lexer) {
     return pipeline_node;
 }
 
-
-static struct ast *parse_command_list(struct lexer *lexer) {
+static struct ast *parse_command_list(struct lexer *lexer)
+{
     struct ast *list_node = ast_create(AST_LIST);
-    if (!list_node) return NULL;
+    if (!list_node)
+        return NULL;
 
     struct ast **commands = NULL;
     size_t count = 0;
 
-    while (1) {
+    while (1)
+    {
         struct ast *command_node = parse_command_or_pipeline(lexer);
-        if (!command_node) {
+        if (!command_node)
+        {
             ast_free(list_node);
             return NULL;
         }
 
         commands = realloc(commands, sizeof(struct ast *) * (count + 1));
-        if (!commands) {
+        if (!commands)
+        {
             ast_free(command_node);
             ast_free(list_node);
             return NULL;
@@ -206,11 +223,16 @@ static struct ast *parse_command_list(struct lexer *lexer) {
         commands[count++] = command_node;
 
         struct token tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_SEMICOLON) {
+        if (tok.type == TOKEN_SEMICOLON)
+        {
             lexer_pop(lexer); // Consume the semicolon
-        } else if (tok.type == TOKEN_EOF || tok.type == TOKEN_NEWLINE) {
+        }
+        else if (tok.type == TOKEN_EOF || tok.type == TOKEN_NEWLINE)
+        {
             break;
-        } else {
+        }
+        else
+        {
             fprintf(stderr, "Syntax error: unexpected token '%s'\n", tok.value);
             ast_free(list_node);
             return NULL;
@@ -312,11 +334,12 @@ static struct ast *parse_if_statement(struct lexer *lexer)
     return ast_create_if(condition, then_branch, else_branch);
 }
 
-
-struct ast *parser_parse(struct lexer *lexer) {
+struct ast *parser_parse(struct lexer *lexer)
+{
     struct token tok = lexer_peek(lexer);
 
-    if (tok.type == TOKEN_IF) {
+    if (tok.type == TOKEN_IF)
+    {
         return parse_if_statement(lexer);
     }
 
