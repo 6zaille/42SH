@@ -63,12 +63,19 @@ struct lexer *lexer_init(const char *input)
     }
     lexer->input = input;
     lexer->pos = 0;
-    lexer->current_tok.type = TOKEN_EOF;
-    lexer->current_tok.value = NULL;
+    lexer->current_tok = NULL;
     return lexer;
 }
 
-static struct token handle_word_token(struct lexer *lexer)
+struct token *token_init(enum token_type type, char *value)
+{
+    struct token *tok = malloc(sizeof(struct token));
+    tok->type = type;
+    tok->value = value;
+    return tok;
+}
+
+static struct token *handle_word_token(struct lexer *lexer)
 {
     char *buffer = malloc(strlen(lexer->input) + 1);
     size_t buf_index = 0;
@@ -88,18 +95,19 @@ static struct token handle_word_token(struct lexer *lexer)
 
     buffer[buf_index] = '\0';
     enum token_type type = check_keyword(buffer);
-    struct token tok = { type, buffer };
-    return tok;
+    return token_init(type, buffer);
 }
 
-struct token lexer_next_token(struct lexer *lexer)
+
+
+struct token *lexer_next_token(struct lexer *lexer)
 {
     skip_whitespace(lexer);
     skip_comment(lexer);
 
     if (lexer->input[lexer->pos] == '\0')
     {
-        return (struct token){ TOKEN_EOF, NULL };
+        return token_init(TOKEN_EOF, NULL);
     }
 
     char c = lexer->input[lexer->pos];
@@ -107,7 +115,7 @@ struct token lexer_next_token(struct lexer *lexer)
     if (c == '|')
     {
         lexer->pos++;
-        return (struct token){ TOKEN_PIPE, strdup("|") };
+        return token_init(TOKEN_PIPE, strdup("|"));
     }
     else if (c == '\'')
     {
@@ -120,44 +128,58 @@ struct token lexer_next_token(struct lexer *lexer)
         if (lexer->input[lexer->pos] == 'n')
         {
             lexer->pos++;
-            return (struct token){ TOKEN_NEWLINE, NULL };
+            return token_init(TOKEN_NEWLINE, NULL);
         }
     }
     else if (c == '\n')
     {
         lexer->pos++;
-        return (struct token){ TOKEN_NEWLINE, NULL };
+        return token_init(TOKEN_NEWLINE, NULL);
     }
     else if (c == ';')
     {
         lexer->pos++;
-        return (struct token){ TOKEN_SEMICOLON, strdup(";") };
+        return token_init(TOKEN_SEMICOLON, strdup(";"));
     }
     else
     {
         return handle_word_token(lexer);
     }
 
-    return (struct token){ TOKEN_ERROR, strdup("char error") };
+    return token_init(TOKEN_ERROR, strdup("char error"));
+}
+
+void token_free(struct token *tok)
+{
+    free(tok->value);
+    free(tok);
 }
 
 struct token lexer_peek(struct lexer *lexer)
 {
-    size_t saved_pos = lexer->pos;
-    struct token next_tok = lexer_next_token(lexer);
-    lexer->pos = saved_pos;
-    return next_tok;
+    if (lexer->current_tok)
+    {
+        return *lexer->current_tok;
+    }
+
+    struct token *next_tok = lexer_next_token(lexer);
+    lexer->current_tok = next_tok;
+    return *next_tok;
 }
 
 struct token lexer_pop(struct lexer *lexer)
 {
-    struct token next_tok = lexer_next_token(lexer);
+    if (lexer->current_tok)
+    {
+        token_free(lexer->current_tok);
+    }
+    struct token *next_tok = lexer_next_token(lexer);
     lexer->current_tok = next_tok;
-    return next_tok;
+    return *next_tok;
 }
 
 void lexer_destroy(struct lexer *lexer)
 {
-    free(lexer->current_tok.value);
+    token_free(lexer->current_tok);
     free(lexer);
 }
