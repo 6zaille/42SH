@@ -109,7 +109,6 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     struct token tok = lexer_peek(lexer);
     while (tok.type == TOKEN_WORD || (tok.type >= TOKEN_REDIRECT_IN && tok.type <= TOKEN_REDIRECT_RW))
     {
-        lexer_pop(lexer);
         if (tok.type == TOKEN_WORD)
         {
             data->args = append_arg(data->args, tok.value);
@@ -129,8 +128,7 @@ static struct ast *parse_simple_command(struct lexer *lexer)
                 free(redir);
             }
         }
-        free(tok.value);
-        tok = lexer_peek(lexer);
+        tok = lexer_pop(lexer);
     }
 
     cmd_node->data = data;
@@ -165,7 +163,6 @@ static struct ast *parse_command_or_pipeline(struct lexer *lexer) {
         if (tok.type == TOKEN_PIPE) {
             lexer_pop(lexer);
         } else {
-            free(tok.value);
             break;
         }
     }
@@ -239,7 +236,6 @@ static struct ast *parse_command_list(struct lexer *lexer) {
         if (tok.type == TOKEN_SEMICOLON) {
             lexer_pop(lexer);
         } else if (tok.type == TOKEN_EOF || tok.type == TOKEN_NEWLINE) {
-            free(tok.value);
             break;
         } else {
             print_token_names(lexer);
