@@ -21,7 +21,9 @@ static void skip_comment(struct lexer *lexer)
 {
     if (lexer->input[lexer->pos] == '#') // Si on rencontre un commentaire
     {
-        while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\n') // On avance jusqu'à la fin de la ligne
+        while (lexer->input[lexer->pos]
+               && lexer->input[lexer->pos]
+                   != '\n') // On avance jusqu'à la fin de la ligne
         {
             lexer->pos++;
         }
@@ -75,7 +77,8 @@ static struct token handle_word_token(struct lexer *lexer)
            && lexer->input[lexer->pos] != ';'
            && lexer->input[lexer->pos] != '\n')
     {
-        if (lexer->input[lexer->pos] == '\'' && is_surrounded_by_letters(lexer->input, lexer->pos))
+        if (lexer->input[lexer->pos] == '\''
+            && is_surrounded_by_letters(lexer->input, lexer->pos))
         {
             lexer->pos++;
             continue;
@@ -85,7 +88,7 @@ static struct token handle_word_token(struct lexer *lexer)
 
     buffer[buf_index] = '\0';
     enum token_type type = check_keyword(buffer);
-    struct token tok = {type, buffer};
+    struct token tok = { type, buffer };
     return tok;
 }
 
@@ -96,7 +99,7 @@ struct token lexer_next_token(struct lexer *lexer)
 
     if (lexer->input[lexer->pos] == '\0')
     {
-        return (struct token){TOKEN_EOF, NULL};
+        return (struct token){ TOKEN_EOF, NULL };
     }
 
     char c = lexer->input[lexer->pos];
@@ -104,7 +107,7 @@ struct token lexer_next_token(struct lexer *lexer)
     if (c == '|')
     {
         lexer->pos++;
-        return (struct token){TOKEN_PIPE, strdup("|")};
+        return (struct token){ TOKEN_PIPE, strdup("|") };
     }
     else if (c == '\'')
     {
@@ -117,25 +120,25 @@ struct token lexer_next_token(struct lexer *lexer)
         if (lexer->input[lexer->pos] == 'n')
         {
             lexer->pos++;
-            return (struct token){TOKEN_NEWLINE, NULL};
+            return (struct token){ TOKEN_NEWLINE, NULL };
         }
     }
     else if (c == '\n')
     {
         lexer->pos++;
-        return (struct token){TOKEN_NEWLINE, NULL};
+        return (struct token){ TOKEN_NEWLINE, NULL };
     }
     else if (c == ';')
     {
         lexer->pos++;
-        return (struct token){TOKEN_SEMICOLON, strdup(";")};
+        return (struct token){ TOKEN_SEMICOLON, strdup(";") };
     }
     else
     {
         return handle_word_token(lexer);
     }
 
-    return (struct token){TOKEN_ERROR, strdup("char error")};
+    return (struct token){ TOKEN_ERROR, strdup("char error") };
 }
 
 struct token lexer_peek(struct lexer *lexer)

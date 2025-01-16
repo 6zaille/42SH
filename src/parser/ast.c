@@ -4,18 +4,22 @@
 
 int last_exit_status = 0;
 
-void ast_eval(struct ast *node) {
-    if (!node) {
+void ast_eval(struct ast *node)
+{
+    if (!node)
+    {
         return;
     }
-    switch (node->type) {
+    switch (node->type)
+    {
     case AST_SIMPLE_COMMAND: {
         struct ast_command_data *data = (struct ast_command_data *)node->data;
         if (!data || !data->args)
             return;
 
         size_t argc = 0;
-        while (data->args[argc] != NULL) {
+        while (data->args[argc] != NULL)
+        {
             argc++;
         }
 
@@ -24,7 +28,8 @@ void ast_eval(struct ast *node) {
     }
 
     case AST_LIST:
-        for (size_t i = 0; i < node->children_count ; i++) {
+        for (size_t i = 0; i < node->children_count; i++)
+        {
             ast_eval(node->children[i]);
         }
         break;
@@ -32,12 +37,15 @@ void ast_eval(struct ast *node) {
     case AST_PIPELINE: {
         int num_commands = node->children_count;
         int **pipes = malloc((num_commands - 1) * sizeof(int *));
-        for (int i = 0; i < num_commands - 1; i++) {
+        for (int i = 0; i < num_commands - 1; i++)
+        {
             pipes[i] = malloc(2 * sizeof(int));
-            if (pipe(pipes[i]) == -1) {
+            if (pipe(pipes[i]) == -1)
+            {
                 perror("pipe");
                 last_exit_status = 1;
-                for (int j = 0; j <= i; j++) {
+                for (int j = 0; j <= i; j++)
+                {
                     free(pipes[j]);
                 }
                 free(pipes);
@@ -45,16 +53,21 @@ void ast_eval(struct ast *node) {
             }
         }
 
-        for (int i = 0; i < num_commands; i++) {
+        for (int i = 0; i < num_commands; i++)
+        {
             pid_t pid = fork();
-            if (pid == 0) {
-                if (i > 0) {
+            if (pid == 0)
+            {
+                if (i > 0)
+                {
                     dup2(pipes[i - 1][0], STDIN_FILENO);
                 }
-                if (i < num_commands - 1) {
+                if (i < num_commands - 1)
+                {
                     dup2(pipes[i][1], STDOUT_FILENO);
                 }
-                for (int j = 0; j < num_commands - 1; j++) {
+                for (int j = 0; j < num_commands - 1; j++)
+                {
                     close(pipes[j][0]);
                     close(pipes[j][1]);
                 }
@@ -63,17 +76,20 @@ void ast_eval(struct ast *node) {
             }
         }
 
-        for (int i = 0; i < num_commands - 1; i++) {
+        for (int i = 0; i < num_commands - 1; i++)
+        {
             close(pipes[i][0]);
             close(pipes[i][1]);
             free(pipes[i]);
         }
         free(pipes);
 
-        for (int i = 0; i < num_commands; i++) {
+        for (int i = 0; i < num_commands; i++)
+        {
             int status;
             wait(&status);
-            if (WIFEXITED(status)) {
+            if (WIFEXITED(status))
+            {
                 last_exit_status = WEXITSTATUS(status);
             }
         }
@@ -86,17 +102,22 @@ void ast_eval(struct ast *node) {
             return;
 
         int condition_status = 1;
-        if (data->condition && data->condition->children_count > 0) {
-            for (size_t i = 0; i < data->condition->children_count; i++) {
+        if (data->condition && data->condition->children_count > 0)
+        {
+            for (size_t i = 0; i < data->condition->children_count; i++)
+            {
                 struct ast *child = data->condition->children[i];
                 ast_eval(child);
                 condition_status = last_exit_status;
             }
         }
 
-        if (condition_status == 0 && data->then_branch) {
+        if (condition_status == 0 && data->then_branch)
+        {
             ast_eval(data->then_branch);
-        } else if (data->else_branch) {
+        }
+        else if (data->else_branch)
+        {
             ast_eval(data->else_branch);
         }
         break;

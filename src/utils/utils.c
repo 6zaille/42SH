@@ -9,8 +9,6 @@
 #include <time.h>
 #include <unistd.h>
 
-
-
 int verbose_mode = 0;
 static int last_exit_status = 0;
 static char *args[256] = { NULL };

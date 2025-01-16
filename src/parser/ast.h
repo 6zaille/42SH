@@ -64,7 +64,6 @@ struct ast_command_data
 
 extern int last_exit_status;
 
-
 struct redirection
 {
     enum redirection_type type;

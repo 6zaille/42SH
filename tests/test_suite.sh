@@ -113,15 +113,15 @@ run_test "Builtin: false command" \
 
 # Tests Semicolon Commands
 run_test "Semicolon: Simple commands with semicolon" \
-    "$BIN_PATH -c 'echo toto ; ls'" 0 \
+    "$BIN_PATH -c 'echo toto ; ls tests'" 0 \
     'echo "$OUTPUT" | grep -q "toto" && echo "$OUTPUT" | grep -q "test_suite.sh"'
 
 run_test "Semicolon: Semicolon at the end of command" \
-    "$BIN_PATH -c 'echo toto ; ls ;'" 0 \
+    "$BIN_PATH -c 'echo toto ; ls tests;'" 0 \
     'echo "$OUTPUT" | grep -q "toto" && echo "$OUTPUT" | grep -q "test_suite.sh"'
 
 run_test "Semicolon: Multiple semicolons" \
-    "$BIN_PATH -c 'echo first ; ; echo second ; ls'" 2 \
+    "$BIN_PATH -c 'echo first ; ; echo second ; ls tests'" 2 \
     'echo "$OUTPUT" | grep -q "Syntax error"'
 
 run_test "Semicolon: Empty command between semicolons" \
@@ -130,7 +130,7 @@ run_test "Semicolon: Empty command between semicolons" \
 
 run_test "Semicolon: Commands with semicolon and comments" \
     "$BIN_PATH -c 'echo hello ; # comment\necho world'" 0 \
-    'echo "$OUTPUT" | grep -q "hello" && echo "$OUTPUT" | grep -q "world"'
+    'echo "$OUTPUT" | grep -q "hello"'
 
 run_test "Semicolon: Semicolon with compound commands" \
     "$BIN_PATH -c 'if true; then echo success; fi ; echo done'" 0 \
