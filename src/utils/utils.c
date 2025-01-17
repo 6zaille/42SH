@@ -9,6 +9,9 @@
 #include <time.h>
 #include <unistd.h>
 
+
+struct variable variables[MAX_VARIABLES];
+size_t variable_count = 0; 
 int verbose_mode = 0;
 static int last_exit_status = 0;
 static char *args[256] = { NULL };
@@ -29,16 +32,6 @@ void verbose_log(const char *message)
     }
 }
 
-#define MAX_VARIABLES 256
-
-struct variable
-{
-    char *name;
-    char *value;
-};
-
-static struct variable variables[MAX_VARIABLES];
-static size_t variable_count = 0;
 
 // Recherche une variable par son nom
 static struct variable *find_variable(const char *name)
@@ -60,7 +53,7 @@ void set_variable(const char *name, const char *value)
     if (var)
     {
         free(var->value);
-        var->value = xstrdup(value);
+        var->value = strdup(value);
     }
     else
     {
@@ -69,8 +62,8 @@ void set_variable(const char *name, const char *value)
             fprintf(stderr, "Error: maximum number of variables reached\n");
             return;
         }
-        variables[variable_count].name = xstrdup(name);
-        variables[variable_count].value = xstrdup(value);
+        variables[variable_count].name = strdup(name);
+        variables[variable_count].value = strdup(value);
         variable_count++;
     }
 }
@@ -194,7 +187,7 @@ void set_args(size_t count, char **arguments)
     args_count = count;
     for (size_t i = 0; i < count; i++)
     {
-        args[i] = xstrdup(arguments[i]);
+        args[i] = strdup(arguments[i]);
     }
 }
 

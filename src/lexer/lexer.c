@@ -28,6 +28,70 @@ static void skip_comment(struct lexer *lexer)
     }
 }
 
+struct token *token_init(enum token_type type, char *value)
+{
+    struct token *tok = malloc(sizeof(struct token));
+    tok->type = type;
+    tok->value = value;
+    return tok;
+}
+
+static struct token *handle_assignment(struct lexer *lexer)
+{
+    char *name = malloc(strlen(lexer->input) + 1);
+    size_t name_index = 0;
+
+    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_')
+    {
+        name[name_index++] = lexer->input[lexer->pos++];
+    }
+    name[name_index] = '\0';
+
+    if (lexer->input[lexer->pos] == '=')
+    {
+        lexer->pos++; // Skip '='
+        char *value = malloc(strlen(lexer->input) + 1);
+        size_t value_index = 0;
+
+        while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos]) && lexer->input[lexer->pos] != ';')
+        {
+            value[value_index++] = lexer->input[lexer->pos++];
+        }
+        value[value_index] = '\0';
+
+        // Utilise set_variable de utils.c
+        set_variable(name, value);
+        free(value);
+
+        struct token *token = token_init(TOKEN_ASSIGNMENT, name);
+        return token;
+    }
+
+    free(name);
+    return NULL;
+}
+
+// Fonction pour analyser les substitutions
+static struct token *handle_variable_substitution(struct lexer *lexer)
+{
+    lexer->pos++; // Skip '$'
+
+    char *buffer = malloc(strlen(lexer->input) + 1);
+    size_t buf_index = 0;
+
+    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_')
+    {
+        buffer[buf_index++] = lexer->input[lexer->pos++];
+    }
+    buffer[buf_index] = '\0';
+
+    // Récupère la valeur via get_variable de utils.c
+    const char *value = get_variable(buffer);
+    free(buffer);
+
+    return token_init(TOKEN_WORD, strdup(value ? value : ""));
+}
+
 enum token_type check_keyword(const char *word)
 {
     if (strcmp(word, "if") == 0)
@@ -65,13 +129,7 @@ struct lexer *lexer_init(const char *input)
     return lexer;
 }
 
-struct token *token_init(enum token_type type, char *value)
-{
-    struct token *tok = malloc(sizeof(struct token));
-    tok->type = type;
-    tok->value = value;
-    return tok;
-}
+
 
 static struct token *handle_word_token(struct lexer *lexer)
 {
@@ -127,10 +185,27 @@ struct token *lexer_next_token(struct lexer *lexer)
             return token_init(TOKEN_NEWLINE, NULL);
         }
     }
+    else if (c == '$')
+    {
+        return handle_variable_substitution(lexer);
+    }
     else if (c == '\n')
     {
         lexer->pos++;
         return token_init(TOKEN_NEWLINE, NULL);
+    }
+    else if (isalnum(c) || c == '_')
+    {
+        size_t temp_pos = lexer->pos;
+        while (isalnum(lexer->input[temp_pos]) || lexer->input[temp_pos] == '_')
+        {
+            temp_pos++;
+        }
+        if (lexer->input[temp_pos] == '=')
+        {
+            return handle_assignment(lexer);
+        }
+        return handle_word_token(lexer);
     }
     else if (c == ';')
     {
@@ -174,8 +249,20 @@ struct token lexer_pop(struct lexer *lexer)
     return *next_tok;
 }
 
+void print_variable(void)
+{    for (size_t i = 0; i < variable_count; i++)
+    {
+        printf("Variable name: %s, Variable value: %s\n", variables[i].name, variables[i].value);
+    }
+}
+
 void lexer_destroy(struct lexer *lexer)
 {
+    for (size_t i = 0; i < variable_count; i++)
+    {
+        free(variables[i].name);
+        free(variables[i].value);
+    }
     token_free(lexer->current_tok);
     free(lexer);
 }

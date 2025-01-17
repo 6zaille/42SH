@@ -2,6 +2,8 @@
 #define LEXER_H
 
 #include "token.h"
+#include "../utils/utils.h"
+#include "../utils/utils.h"
 
 struct lexer
 {
@@ -21,5 +23,7 @@ enum token_type check_keyword(const char *word);
 struct token lexer_peek(struct lexer *lexer);
 
 struct token lexer_pop(struct lexer *lexer);
+
+void print_variable(void);
 
 #endif /* !LEXER_H */

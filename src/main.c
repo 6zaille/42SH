@@ -10,6 +10,70 @@
 #include "parser/parser.h"
 #include "utils/utils.h"
 
+#include "lexer/token.h"
+
+
+
+
+const char *token_type_to_string(enum token_type type)
+{
+    switch (type)
+    {
+    case TOKEN_WORD:
+        return "WORD";
+    case TOKEN_ASSIGNMENT:
+        return "ASSIGNMENT";
+    case TOKEN_EOF:
+        return "EOF";
+    case TOKEN_NEWLINE:
+        return "NEWLINE";
+    case TOKEN_PIPE:
+        return  "PIPE";
+    case TOKEN_SEMICOLON:
+        return "SEMICOLON";
+    case TOKEN_REDIRECT_IN:
+        return "REDIRECT_IN";
+    case TOKEN_REDIRECT_OUT:
+        return "REDIRECT_OUT";
+    case TOKEN_REDIRECT_APPEND:
+        return "REDIRECT_APPEND";
+    case TOKEN_REDIRECT_DUP_OUT:
+        return "REDIRECT_DUP_OUT";
+    case TOKEN_REDIRECT_DUP_IN:
+        return "REDIRECT_DUP_IN";
+    case TOKEN_REDIRECT_CLOBBER:
+        return "REDIRECT_CLOBBER";
+    case TOKEN_REDIRECT_RW:
+        return "REDIRECT_RW";
+    case TOKEN_NEGATION:
+        return "NEGATION";
+    case TOKEN_IF: 
+        return  "IF";
+    case TOKEN_THEN:
+        return "THEN";
+    case TOKEN_ELIF:
+        return  "ELIF";
+    case TOKEN_ELSE:
+        return  "ELSE";
+    case TOKEN_FI:
+        return  "FI";
+    case TOKEN_VARIABLE:
+        return "VARIABLE";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+void print_tokens(struct lexer *lexer)
+{
+    struct token *token = NULL;
+    while ((token = lexer_next_token(lexer)) != NULL && token->type != TOKEN_EOF)
+    {
+        printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type), token->value);
+        token_free(token);
+    }
+}
+
 ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
 {
     if (!lineptr || !n || !stream)
@@ -131,7 +195,6 @@ int main(int argc, char **argv)
         free(buffer);
         return 2;
     }
-
     struct ast *ast = parser_parse(lexer);
     lexer_destroy(lexer);
     if (pretty_print)
@@ -140,7 +203,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        // ast_pretty_print(ast, 0);
+        //ast_pretty_print(ast, 0);
         ast_eval(ast);
     }
 
