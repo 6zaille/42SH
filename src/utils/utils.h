@@ -5,9 +5,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Fonctions existantes
-void *xmalloc(size_t size);
-char *xstrdup(const char *str);
+#define MAX_VARIABLES 256
+
+struct variable
+{
+    char *name;
+    char *value;
+};
+
+extern struct variable variables[MAX_VARIABLES];
+extern size_t variable_count;
 
 void set_verbose_mode(int enabled);
 void verbose_log(const char *message);

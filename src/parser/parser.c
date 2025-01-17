@@ -103,12 +103,93 @@ static struct redirection *parse_redirection(struct lexer *lexer)
     redir->filename = strdup(filename.value);
     return redir;
 }
+static struct ast *create_assignment_node(const char *value)
+{
+    struct ast *assignment_node = ast_create(AST_SIMPLE_COMMAND);
+    if (!assignment_node)
+    {
+        printf("Failed to create assignment node\n");
+        return NULL;
+    }
+
+    struct ast_command_data *assignment_data = malloc(sizeof(*assignment_data));
+    if (!assignment_data)
+    {
+        printf("Failed to allocate memory for assignment_data\n");
+        free(assignment_node);
+        return NULL;
+    }
+
+    assignment_data->args = append_arg(NULL, value);
+    assignment_node->data = assignment_data;
+
+    return assignment_node;
+}
+
+static int add_assignment_node(struct ast *cmd_node, struct lexer *lexer)
+{
+    struct token tok = lexer_peek(lexer);
+    struct ast *assignment_node = create_assignment_node(tok.value);
+    if (!assignment_node)
+    {
+        return -1;
+    }
+
+    cmd_node->children =
+        realloc(cmd_node->children,
+                sizeof(struct ast *) * (cmd_node->children_count + 1));
+    if (!cmd_node->children)
+    {
+        perror("realloc");
+        ast_free(assignment_node);
+        return -1;
+    }
+
+    cmd_node->children[cmd_node->children_count++] = assignment_node;
+    lexer_pop(lexer); // Passe au token suivant
+    return 0;
+}
+
+static int add_argument_or_redirection(struct ast_command_data *data,
+                                       struct lexer *lexer, struct token tok)
+{
+    if (tok.type == TOKEN_VARIABLE)
+    {
+        const char *value = get_variable(tok.value);
+        data->args = append_arg(data->args, value);
+    }
+    else if (tok.type == TOKEN_WORD)
+    {
+        data->args = append_arg(data->args, tok.value);
+    }
+    else
+    {
+        struct redirection *redir = parse_redirection(lexer);
+        if (redir)
+        {
+            data->redirections = realloc(data->redirections,
+                                         sizeof(*data->redirections)
+                                             * (data->redirection_count + 1));
+            if (!data->redirections)
+            {
+                perror("realloc");
+                free(redir);
+                return -1;
+            }
+            data->redirections[data->redirection_count++] = *redir;
+            free(redir);
+        }
+    }
+    return 0;
+}
 
 static struct ast *parse_simple_command(struct lexer *lexer)
 {
     struct ast *cmd_node = ast_create(AST_SIMPLE_COMMAND);
     if (!cmd_node)
+    {
         return NULL;
+    }
 
     struct ast_command_data *data = malloc(sizeof(*data));
     if (!data)
@@ -121,30 +202,24 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     data->redirection_count = 0;
 
     struct token tok = lexer_peek(lexer);
-    while (tok.type == TOKEN_WORD
+    while (tok.type == TOKEN_WORD || tok.type == TOKEN_VARIABLE || tok.type == TOKEN_ASSIGNMENT
            || (tok.type >= TOKEN_REDIRECT_IN && tok.type <= TOKEN_REDIRECT_RW) || is_special_token(tok.type))
     {
         convert_token_to_word(&tok);
-        if (tok.type == TOKEN_WORD)
+        if (tok.type == TOKEN_ASSIGNMENT)
         {
-            data->args = append_arg(data->args, tok.value);
+            if (add_assignment_node(cmd_node, lexer) != 0)
+            {
+                ast_free(cmd_node);
+                return NULL;
+            }
         }
         else
         {
-            struct redirection *redir = parse_redirection(lexer);
-            if (redir)
+            if (add_argument_or_redirection(data, lexer, tok) != 0)
             {
-                data->redirections =
-                    realloc(data->redirections,
-                            sizeof(*data->redirections)
-                                * (data->redirection_count + 1));
-                if (!data->redirections)
-                {
-                    perror("realloc");
-                    exit(EXIT_FAILURE);
-                }
-                data->redirections[data->redirection_count++] = *redir;
-                free(redir);
+                ast_free(cmd_node);
+                return NULL;
             }
         }
         tok = lexer_pop(lexer);
@@ -154,56 +229,41 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     return cmd_node;
 }
 
-static struct ast *parse_command_or_pipeline(struct lexer *lexer)
+static struct ast *parse_change(struct lexer *lexer)
 {
-    struct ast *pipeline_node = ast_create(AST_PIPELINE);
-    if (!pipeline_node)
-        return NULL;
+    struct token tok = lexer_peek(lexer);
 
-    struct ast **commands = NULL;
-    size_t count = 0;
-
-    while (1)
+    // Cas de négation
+    if (tok.type == TOKEN_NEGATION)
     {
-        struct ast *command_node = parse_simple_command(lexer);
-        if (!command_node)
+        lexer_pop(lexer);
+        struct ast *child =
+            parse_change(lexer); // Récursivité pour analyser ce qui suit
+        if (!child)
+            return NULL;
+
+        struct ast *negation_node = ast_create(AST_NEGATION);
+        if (!negation_node)
         {
-            ast_free(pipeline_node);
+            ast_free(child);
             return NULL;
         }
 
-        commands = realloc(commands, sizeof(struct ast *) * (count + 1));
-        if (!commands)
+        negation_node->children = malloc(sizeof(struct ast *));
+        if (!negation_node->children)
         {
-            ast_free(command_node);
-            ast_free(pipeline_node);
+            ast_free(negation_node);
+            ast_free(child);
             return NULL;
         }
 
-        commands[count++] = command_node;
-
-        struct token tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_PIPE)
-        {
-            lexer_pop(lexer);
-        }
-        else
-        {
-            break;
-        }
-    }
-    pipeline_node->children = commands;
-    pipeline_node->children_count = count;
-
-    if (count == 1)
-    {
-        struct ast *single_command = commands[0];
-        free(pipeline_node->children);
-        free(pipeline_node);
-        return single_command;
+        negation_node->children[0] = child;
+        negation_node->children_count = 1;
+        return negation_node;
     }
 
-    return pipeline_node;
+    // Analyse d'un pipeline ou d'une commande simple
+    return parse_pipeline(lexer);
 }
 
 static struct ast *parse_command_list(struct lexer *lexer)
@@ -579,7 +639,6 @@ struct ast *parser_parse(struct lexer *lexer)
     {
         return parse_if_statement(lexer);
     }
-
     return parse_command_list(lexer);
 }
 
@@ -641,6 +700,25 @@ struct ast *parse_pipeline(struct lexer *lexer)
             break;
         }
         lexer_pop(lexer);
+        struct ast *next_command = parse_simple_command(lexer);
+        if (!next_command)
+        {
+            ast_free(pipeline_node);
+            return NULL;
+        }
+
+        struct ast **new_children =
+            realloc(pipeline_node->children,
+                    sizeof(struct ast *) * (pipeline_node->children_count + 1));
+        if (!new_children)
+        {
+            ast_free(next_command);
+            ast_free(pipeline_node);
+            return NULL;
+        }
+
+        pipeline_node->children = new_children;
+        pipeline_node->children[pipeline_node->children_count++] = next_command;
 
         tok = lexer_peek(lexer);
         if (tok.type == TOKEN_NEGATION)

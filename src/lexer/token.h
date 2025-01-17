@@ -24,7 +24,9 @@ enum token_type
     TOKEN_REDIRECT_DUP_IN, // <&
     TOKEN_REDIRECT_CLOBBER, // >|
     TOKEN_REDIRECT_RW, // <>
-    TOKEN_NEGATION
+    TOKEN_NEGATION,
+    TOKEN_VARIABLE,
+    TOKEN_ASSIGNMENT,
 };
 
 struct token
@@ -32,5 +34,7 @@ struct token
     enum token_type type;
     char *value;
 };
+
+void token_free(struct token *tok);
 
 #endif /* !TOKEN_H */
