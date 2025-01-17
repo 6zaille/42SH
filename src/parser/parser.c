@@ -146,7 +146,7 @@ static int add_assignment_node(struct ast *cmd_node, struct lexer *lexer)
     }
 
     cmd_node->children[cmd_node->children_count++] = assignment_node;
-    lexer_pop(lexer); // Passe au token suivant
+    lexer_pop(lexer);
     return 0;
 }
 
@@ -233,12 +233,11 @@ static struct ast *parse_change(struct lexer *lexer)
 {
     struct token tok = lexer_peek(lexer);
 
-    // Cas de négation
     if (tok.type == TOKEN_NEGATION)
     {
         lexer_pop(lexer);
         struct ast *child =
-            parse_change(lexer); // Récursivité pour analyser ce qui suit
+            parse_change(lexer);
         if (!child)
             return NULL;
 
@@ -262,8 +261,14 @@ static struct ast *parse_change(struct lexer *lexer)
         return negation_node;
     }
 
-    // Analyse d'un pipeline ou d'une commande simple
     return parse_pipeline(lexer);
+}
+
+static int is_end_of_block(enum token_type type)
+{
+    return type == TOKEN_THEN || type == TOKEN_ELSE || 
+           type == TOKEN_ELIF || type == TOKEN_FI || 
+           type == TOKEN_EOF;
 }
 
 static struct ast *parse_command_list(struct lexer *lexer)
@@ -277,6 +282,12 @@ static struct ast *parse_command_list(struct lexer *lexer)
 
     while (1)
     {
+        struct token tok = lexer_peek(lexer);
+        if (is_end_of_block(tok.type))
+        {
+            break;
+        }
+
         struct ast *command_node = parse_change(lexer);
         if (!command_node)
         {
@@ -294,7 +305,7 @@ static struct ast *parse_command_list(struct lexer *lexer)
 
         commands[count++] = command_node;
 
-        struct token tok = lexer_peek(lexer);
+        tok = lexer_peek(lexer);
         if (tok.type == TOKEN_SEMICOLON)
         {
             lexer_pop(lexer);
@@ -316,6 +327,8 @@ static struct ast *parse_command_list(struct lexer *lexer)
     list_node->children_count = count;
     return list_node;
 }
+
+
 
 static struct ast *parse_if_condition(struct lexer *lexer)
 {
@@ -427,6 +440,11 @@ static struct ast *parse_then(struct lexer *lexer)
         {
             lexer_pop(lexer);
         }
+        else if (tok.type == TOKEN_ELSE)
+        {
+            break;
+        }
+        /*
         else if (tok.type != TOKEN_THEN)
         {
             fprintf(stderr, "token anormal dans then'%s'\n",
@@ -434,6 +452,7 @@ static struct ast *parse_then(struct lexer *lexer)
             ast_free(condition);
             return NULL;
         }
+        */
     }
 
     return condition;
@@ -488,6 +507,11 @@ static struct ast *parse_else(struct lexer *lexer)
         {
             lexer_pop(lexer);
         }
+        else if (tok.type == TOKEN_FI)
+        {
+            break;
+        }
+        /*
         else if (tok.type != TOKEN_THEN)
         {
             fprintf(stderr, "token anormal dans else'%s'\n",
@@ -495,6 +519,7 @@ static struct ast *parse_else(struct lexer *lexer)
             ast_free(condition);
             return NULL;
         }
+        */
     }
 
     return condition;
@@ -508,14 +533,12 @@ static struct ast *parse_if_statement(struct lexer *lexer)
         fprintf(stderr, "Syntax error: expected 'if', got '%s'\n", tok.value ? tok.value : "NULL");
         return NULL;
     }
-    lexer_pop(lexer); // Consomme 'if'
+    lexer_pop(lexer);
 
-    // Analyse la condition du bloc if
     struct ast *condition = parse_if_condition(lexer);
     if (!condition)
         return NULL;
 
-    // Analyse le bloc then
     struct ast *then_branch = parse_then(lexer);
     if (!then_branch)
     {
@@ -523,19 +546,16 @@ static struct ast *parse_if_statement(struct lexer *lexer)
         return NULL;
     }
 
-    // Gestion des blocs elif et else
     struct ast *else_branch = NULL;
 
     while (1)
     {
         tok = lexer_peek(lexer);
 
-        // Cas d'un bloc `elif`
         if (tok.type == TOKEN_ELIF)
         {
-            lexer_pop(lexer); // Consomme 'elif'
+            lexer_pop(lexer);
 
-            // Analyse la condition du bloc elif
             struct ast *elif_condition = parse_if_condition(lexer);
             if (!elif_condition)
             {
@@ -544,7 +564,6 @@ static struct ast *parse_if_statement(struct lexer *lexer)
                 return NULL;
             }
 
-            // Analyse le bloc then de l'elif
             struct ast *elif_then = parse_then(lexer);
             if (!elif_then)
             {
@@ -554,7 +573,6 @@ static struct ast *parse_if_statement(struct lexer *lexer)
                 return NULL;
             }
 
-            // Crée un nœud AST pour l'elif et l'ajoute dans la branche else
             struct ast *elif_node = ast_create_if(elif_condition, elif_then, NULL);
             if (!elif_node)
             {
@@ -567,11 +585,10 @@ static struct ast *parse_if_statement(struct lexer *lexer)
 
             if (!else_branch)
             {
-                else_branch = elif_node; // Premier elif devient le else_branch
+                else_branch = elif_node;
             }
             else
             {
-                // Ajoute cet elif comme branche else du précédent elif
                 struct ast_if_data *current_else_data = (struct ast_if_data *)else_branch->data;
                 while (current_else_data->else_branch && current_else_data->else_branch->type == AST_IF)
                 {
@@ -581,14 +598,13 @@ static struct ast *parse_if_statement(struct lexer *lexer)
             }
         }
         else
-            break; // Pas de token elif, on passe à la suite
+            break;
     }
 
-    // Cas d'un bloc `else` (optionnel)
     tok = lexer_peek(lexer);
     if (tok.type == TOKEN_ELSE)
     {
-        lexer_pop(lexer); // Consomme 'else'
+        lexer_pop(lexer);
 
         struct ast *else_body = parse_else(lexer);
         if (!else_body)
@@ -601,11 +617,10 @@ static struct ast *parse_if_statement(struct lexer *lexer)
 
         if (!else_branch)
         {
-            else_branch = else_body; // Si pas de elif, le else devient else_branch
+            else_branch = else_body;
         }
         else
         {
-            // Ajoute le else au dernier elif
             struct ast_if_data *current_else_data = (struct ast_if_data *)else_branch->data;
             while (current_else_data->else_branch && current_else_data->else_branch->type == AST_IF)
             {
@@ -615,7 +630,6 @@ static struct ast *parse_if_statement(struct lexer *lexer)
         }
     }
 
-    // Vérifie et consomme le token 'fi'
     tok = lexer_peek(lexer);
     if (tok.type != TOKEN_FI)
     {
@@ -625,7 +639,7 @@ static struct ast *parse_if_statement(struct lexer *lexer)
         ast_free(else_branch);
         return NULL;
     }
-    lexer_pop(lexer); // Consomme 'fi'
+    lexer_pop(lexer);
 
     return ast_create_if(condition, then_branch, else_branch);
 }

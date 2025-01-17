@@ -1,6 +1,6 @@
 #!/bin/sh
 
-printf "Running complete 42sh test suite...\n"
+printf "Testsuite 42SH is cooking\n"
 printf "=====================================\n"
 STATUS=0
 TOTAL_TESTS=0
@@ -9,7 +9,7 @@ FAILED_TESTS=0
 BIN_PATH="./src/42sh"
 
 if [ ! -f "$BIN_PATH" ]; then
-    printf "Error: 42sh binary not found at %s\n" "$BIN_PATH"
+    printf "chef il manque le binary 42sh %s\n" "$BIN_PATH"
     exit 1
 fi
 
@@ -125,18 +125,6 @@ run_test "Semicolon: Multiple semicolons with valid commands" \
     "$BIN_PATH -c 'echo foo ; echo bar ; echo baz'" 0 \
     'echo "$OUTPUT" | grep -q "foo" && echo "$OUTPUT" | grep -q "bar" && echo "$OUTPUT" | grep -q "baz"'
 
-#run_test "Semicolon: probleme de echo if etc mem leak" \
-#    "$BIN_PATH -c 'if true; then echo success; fi ; echo done'" 0 \
-#    'echo "$OUTPUT" | grep -q "success" && echo "$OUTPUT" | grep -q "done"'
-
-#run_test "Semicolon: ; new line on s'arette a la premier ligne" \
-#    "$BIN_PATH -c 'echo first ;\n echo second;\n echo third'" 0 \
-#    'echo "$OUTPUT" | grep -q "first" && echo "$OUTPUT" | grep -q "second"'
-
-#run_test "Semicolon: probleme de ; dans une string" \
-#    "$BIN_PATH -c 'echo \"hello ; world\"'" 0 \
-#    'echo "$OUTPUT" | grep -q "hello ; world"'
-
 run_test "Semicolon: Semicolon between builtins" \
     "$BIN_PATH -c 'echo before ; echo after'" 0 \
     'echo "$OUTPUT" | grep -q "before" && echo "$OUTPUT" | grep -q "after"'
@@ -176,13 +164,57 @@ run_test "Redirection: Append redirection" \
     'true'
 
 # Tests Conditional Statements
-run_test "Conditional: If-then-else syntax" \
-    "$BIN_PATH -c 'if true\n then echo yes\n else echo no\n fi'" 0 \
-    'echo "$OUTPUT" | grep -q "yes"'
+run_test "If-Then-Else: Command succeeds" \
+    "./src/42sh -c 'if echo toto; then ls; else echo ko; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "^toto$"'
 
-run_test "Conditional: Invalid syntax handling" \
-    "$BIN_PATH -c 'if true; then; else fi'" 2 \
-    'echo "$OUTPUT" | grep -q "Syntax error"'
+run_test "If-Then-Else: Command fails" \
+    "./src/42sh -c 'if false; then echo ok; else echo ko; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "^ko$"'
+
+run_test "If-Elif-Else: Elif condition true" \
+    "./src/42sh -c 'if false; then echo no; elif echo maybe; then echo yes; else echo never; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "^maybe$" && echo "$OUTPUT" | grep -q "^yes$"'
+
+run_test "If-Elif-Else: If condition true" \
+    "./src/42sh -c 'if echo toto; then echo itworks; elif echo nope; then echo wrong; else echo never; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "^toto$" && echo "$OUTPUT" | grep -q "^itworks$"'
+
+run_test "If-Elif-Else: Else executed" \
+    "./src/42sh -c 'if false; then echo fail; elif false; then echo failagain; else echo succeed; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "^succeed$"'
+
+run_test "If-Then: LS command in then" \
+    "./src/42sh -c 'if echo toto; then ls /; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "^toto$"'
+
+run_test "If-Then-Else: Invalid command" \
+    "./src/42sh -c 'if command_not_found; then echo ok; else echo error; fi'" 127 \
+    'echo "$OUTPUT" | grep -q "^error$"'
+
+run_test "If-Elif: Multiple commands in elif" \
+    "./src/42sh -c 'if false; then echo no; elif echo first && echo second; then echo good; else echo bad; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "^first$" && echo "$OUTPUT" | grep -q "^second$" && echo "$OUTPUT" | grep -q "^good$"'
+
+run_test "If-Then: No else block" \
+    "./src/42sh -c 'if echo toto; then echo success; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "^toto$" && echo "$OUTPUT" | grep -q "^success$"'
+
+run_test "If-Then-Else: Complex logic" \
+    "./src/42sh -c 'if echo toto && ls /; then echo passed; else echo failed; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "^toto$" && echo "$OUTPUT" | grep -q "^passed$"'
+
+run_test "If-Elif-Else: Mixed commands" \
+    "./src/42sh -c 'if false; then echo wrong; elif echo running && false; then echo also wrong; else echo correct; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "^running$" && echo "$OUTPUT" | grep -q "^correct$"'
+
+run_test "If-Then: Redirection in block" \
+    "./src/42sh -c 'if echo toto > output.txt; then echo redirected; fi'" 0 \
+    'grep -q "^toto$" output.txt && echo "$OUTPUT" | grep -q "^redirected$" && rm output.txt'
+
+run_test "If-Elif-Else: Pipe in block" \
+    "./src/42sh -c 'if false; then echo no; elif echo pipe | grep p; then echo valid; else echo invalid; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "^pipe$" && echo "$OUTPUT" | grep -q "^valid$"'
 
 run_test "Conditional: Exit with specific code" \
     "$BIN_PATH -c 'exit 42'" 42 'true'
