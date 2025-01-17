@@ -177,7 +177,7 @@ run_test "Redirection: Append redirection" \
 
 # Tests Conditional Statements
 run_test "Conditional: If-then-else syntax" \
-    "$BIN_PATH -c 'if true; then echo yes; else echo no; fi'" 0 \
+    "$BIN_PATH -c 'if true\n then echo yes\n else echo no\n fi'" 0 \
     'echo "$OUTPUT" | grep -q "yes"'
 
 run_test "Conditional: Invalid syntax handling" \

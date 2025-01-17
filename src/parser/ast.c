@@ -99,8 +99,10 @@ void ast_eval(struct ast *node)
     case AST_IF: {
         struct ast_if_data *data = (struct ast_if_data *)node->data;
         if (!data)
+        {
+            //fprintf(stderr, "Ast node if n'existe pas\n");
             return;
-
+        }
         int condition_status = 1;
         if (data->condition && data->condition->children_count > 0)
         {
@@ -119,6 +121,10 @@ void ast_eval(struct ast *node)
         else if (data->else_branch)
         {
             ast_eval(data->else_branch);
+        } 
+        else if (!data->then_branch && !data->else_branch) 
+        {
+        fprintf(stderr, "[ERROR] AST_IF missing 'then' or 'else' branch.\n");
         }
         break;
     }
@@ -150,15 +156,18 @@ void ast_pretty_print(struct ast *node, int depth)
     if (!node)
         return;
 
+    // Affiche l'indentation
     for (int i = 0; i < depth; i++)
         printf(i == depth - 1 ? "|---" : "|   ");
 
+    // Gère les différents types de nœuds
     switch (node->type)
     {
     case AST_LIST:
         printf("LIST\n");
         break;
-    case AST_SIMPLE_COMMAND:
+
+    case AST_SIMPLE_COMMAND: {
         printf("SIMPLE_COMMAND");
         struct ast_command_data *data = (struct ast_command_data *)node->data;
         if (data && data->args)
@@ -170,32 +179,69 @@ void ast_pretty_print(struct ast *node, int depth)
         }
         printf("\n");
         break;
-    case AST_NEGATION: {
-        struct ast *child = node->children[0];
-        ast_eval(child);
-        last_exit_status = (last_exit_status == 0) ? 1 : 0;
-        break;
     }
-    case AST_IF:
-        printf("IF\n");
-        printf("|   Condition:\n");
-        ast_pretty_print(((struct ast_if_data *)node->data)->condition,
-                         depth + 1);
-        printf("|   Then:\n");
-        ast_pretty_print(((struct ast_if_data *)node->data)->then_branch,
-                         depth + 1);
-        if (((struct ast_if_data *)node->data)->else_branch)
+
+    case AST_NEGATION: {
+        printf("NEGATION\n");
+        if (node->children_count > 0)
         {
-            printf("|   Else:\n");
-            ast_pretty_print(((struct ast_if_data *)node->data)->else_branch,
-                             depth + 1);
+            ast_pretty_print(node->children[0], depth + 1);
         }
         break;
+    }
+
+    case AST_IF: {
+        printf("IF\n");
+
+        // Affiche la condition
+        printf("|   Condition:\n");
+        struct ast_if_data *if_data = (struct ast_if_data *)node->data;
+        if (if_data && if_data->condition)
+        {
+            ast_pretty_print(if_data->condition, depth + 1);
+        }
+        else
+        {
+            printf("|   |---(NULL)\n");
+        }
+
+        // Affiche le bloc then
+        printf("|   Then:\n");
+        if (if_data && if_data->then_branch)
+        {
+            ast_pretty_print(if_data->then_branch, depth + 1);
+        }
+        else
+        {
+            printf("|   |---(NULL)\n");
+        }
+
+        // Affiche le bloc else ou elif
+        if (if_data && if_data->else_branch)
+        {
+            struct ast *else_branch = if_data->else_branch;
+
+            // Vérifie si c'est un bloc elif
+            if (else_branch->type == AST_IF)
+            {
+                printf("|   Elif:\n");
+            }
+            else
+            {
+                printf("|   Else:\n");
+            }
+
+            ast_pretty_print(else_branch, depth + 1);
+        }
+        break;
+    }
+
     default:
         printf("UNKNOWN\n");
         break;
     }
 
+    // Parcours les enfants restants
     for (size_t i = 0; i < node->children_count; i++)
     {
         ast_pretty_print(node->children[i], depth + 1);

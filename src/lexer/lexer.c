@@ -181,6 +181,9 @@ struct token lexer_pop(struct lexer *lexer)
 
 void lexer_destroy(struct lexer *lexer)
 {
-    token_free(lexer->current_tok);
+    if (lexer->current_tok)
+    {
+        token_free(lexer->current_tok);
+    }
     free(lexer);
 }

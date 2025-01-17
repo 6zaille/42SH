@@ -4,10 +4,10 @@
 #include "lexer.h"
 #include "token.h"
 
-void print_token(struct token tok)
+void print_token(struct token *tok)
 {
     const char *type_str;
-    switch (tok.type)
+    switch (tok->type)
     {
     case TOKEN_IF:
         type_str = "TOKEN_IF";
@@ -42,13 +42,19 @@ void print_token(struct token tok)
     case TOKEN_ERROR:
         type_str = "TOKEN_ERROR";
         break;
+    case TOKEN_PIPE:
+        type_str = "TOKEN_PIPE";
+        break;
+    case TOKEN_NEGATION:
+        type_str = "TOKEN_NEGATION";
+        break;
     default:
         type_str = "UNKNOWN";
         break;
     }
 
     printf("Token: { type: %s, value: %s }\n", type_str,
-           tok.value ? tok.value : "NULL");
+           tok->value ? tok->value : "NULL");
 }
 
 int main()
@@ -69,13 +75,13 @@ int main()
         return EXIT_FAILURE;
     }
 
-    struct token tok;
+    struct token *tok;
     do
     {
         tok = lexer_next_token(lexer);
         print_token(tok);
-        free(tok.value);
-    } while (tok.type != TOKEN_EOF);
+        free(tok->value);
+    } while (tok->type != TOKEN_EOF);
 
     lexer_destroy(lexer);
     return EXIT_SUCCESS;

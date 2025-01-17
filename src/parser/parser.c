@@ -67,6 +67,20 @@ static char **append_arg(char **args, const char *arg)
     return new_args;
 }
 
+static int is_special_token(enum token_type type)
+{
+    return type == TOKEN_IF || type == TOKEN_THEN || type == TOKEN_ELSE ||
+           type == TOKEN_ELIF || type == TOKEN_FI;
+}
+
+static void convert_token_to_word(struct token *tok)
+{
+    if (is_special_token(tok->type))
+    {
+        tok->type = TOKEN_WORD;
+    }
+}
+
 static struct redirection *parse_redirection(struct lexer *lexer)
 {
     struct token tok = lexer_peek(lexer);
@@ -108,8 +122,9 @@ static struct ast *parse_simple_command(struct lexer *lexer)
 
     struct token tok = lexer_peek(lexer);
     while (tok.type == TOKEN_WORD
-           || (tok.type >= TOKEN_REDIRECT_IN && tok.type <= TOKEN_REDIRECT_RW))
+           || (tok.type >= TOKEN_REDIRECT_IN && tok.type <= TOKEN_REDIRECT_RW) || is_special_token(tok.type))
     {
+        convert_token_to_word(&tok);
         if (tok.type == TOKEN_WORD)
         {
             data->args = append_arg(data->args, tok.value);
@@ -139,69 +154,56 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     return cmd_node;
 }
 
-static const char *token_type_to_string(enum token_type type)
+static struct ast *parse_command_or_pipeline(struct lexer *lexer)
 {
-    switch (type)
+    struct ast *pipeline_node = ast_create(AST_PIPELINE);
+    if (!pipeline_node)
+        return NULL;
+
+    struct ast **commands = NULL;
+    size_t count = 0;
+
+    while (1)
     {
-    case TOKEN_IF:
-        return "if";
-    case TOKEN_THEN:
-        return "then";
-    case TOKEN_ELSE:
-        return "else";
-    case TOKEN_FI:
-        return "fi";
-    default:
-        return "UNKNOWN";
-    }
-}
-
-static void print_token_names(struct lexer *lexer)
-{
-    struct token tok;
-    tok = lexer_peek(lexer);
-    while (tok.type != TOKEN_EOF && tok.type != TOKEN_NEWLINE)
-    {
-        printf("%s\n", token_type_to_string(tok.type));
-        free(tok.value);
-        tok = lexer_pop(lexer);
-    }
-}
-
-static struct ast *parse_change(struct lexer *lexer)
-{
-    struct token tok = lexer_peek(lexer);
-
-    // Cas de négation
-    if (tok.type == TOKEN_NEGATION)
-    {
-        lexer_pop(lexer);
-        struct ast *child = parse_change(lexer); // Récursivité pour analyser ce qui suit
-        if (!child)
-            return NULL;
-
-        struct ast *negation_node = ast_create(AST_NEGATION);
-        if (!negation_node)
+        struct ast *command_node = parse_simple_command(lexer);
+        if (!command_node)
         {
-            ast_free(child);
+            ast_free(pipeline_node);
             return NULL;
         }
 
-        negation_node->children = malloc(sizeof(struct ast *));
-        if (!negation_node->children)
+        commands = realloc(commands, sizeof(struct ast *) * (count + 1));
+        if (!commands)
         {
-            ast_free(negation_node);
-            ast_free(child);
+            ast_free(command_node);
+            ast_free(pipeline_node);
             return NULL;
         }
 
-        negation_node->children[0] = child;
-        negation_node->children_count = 1;
-        return negation_node;
+        commands[count++] = command_node;
+
+        struct token tok = lexer_peek(lexer);
+        if (tok.type == TOKEN_PIPE)
+        {
+            lexer_pop(lexer);
+        }
+        else
+        {
+            break;
+        }
+    }
+    pipeline_node->children = commands;
+    pipeline_node->children_count = count;
+
+    if (count == 1)
+    {
+        struct ast *single_command = commands[0];
+        free(pipeline_node->children);
+        free(pipeline_node);
+        return single_command;
     }
 
-    // Analyse d'un pipeline ou d'une commande simple
-    return parse_pipeline(lexer);
+    return pipeline_node;
 }
 
 static struct ast *parse_command_list(struct lexer *lexer)
@@ -215,7 +217,7 @@ static struct ast *parse_command_list(struct lexer *lexer)
 
     while (1)
     {
-        struct ast *command_node = parse_change(lexer);
+        struct ast *command_node = parse_command_or_pipeline(lexer);
         if (!command_node)
         {
             ast_free(list_node);
@@ -241,10 +243,10 @@ static struct ast *parse_command_list(struct lexer *lexer)
         {
             break;
         }
+        
         else
         {
-            print_token_names(lexer);
-            fflush(stdout);
+            
             ast_free(list_node);
             return NULL;
         }
@@ -254,7 +256,6 @@ static struct ast *parse_command_list(struct lexer *lexer)
     list_node->children_count = count;
     return list_node;
 }
-    
 
 static struct ast *parse_if_condition(struct lexer *lexer)
 {
@@ -329,13 +330,13 @@ static struct ast *parse_then(struct lexer *lexer)
     while (1)
     {
         struct token tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_ELSE)
+        if (tok.type == TOKEN_ELSE || tok.type == TOKEN_FI || tok.type == TOKEN_ELIF)
         {
-            lexer_pop(lexer);
+            //lexer_pop(lexer);
             break;
         }
 
-        if (tok.type == TOKEN_EOF || tok.type == TOKEN_FI)
+        if (tok.type == TOKEN_EOF)
         {
             fprintf(stderr, "probleme de fin dans parse_then\n");
             ast_free(condition);
@@ -392,7 +393,7 @@ static struct ast *parse_else(struct lexer *lexer)
         struct token tok = lexer_peek(lexer);
         if (tok.type == TOKEN_FI)
         {
-            lexer_pop(lexer);
+            //lexer_pop(lexer);
             break;
         }
 
@@ -444,24 +445,131 @@ static struct ast *parse_if_statement(struct lexer *lexer)
     struct token tok = lexer_peek(lexer);
     if (tok.type != TOKEN_IF)
     {
-        fprintf(stderr, "erreur dans if_statement '%s'\n",
-                tok.value ? tok.value : "NULL");
+        fprintf(stderr, "Syntax error: expected 'if', got '%s'\n", tok.value ? tok.value : "NULL");
         return NULL;
     }
-    lexer_pop(lexer);
+    lexer_pop(lexer); // Consomme 'if'
 
+    // Analyse la condition du bloc if
     struct ast *condition = parse_if_condition(lexer);
     if (!condition)
         return NULL;
+
+    // Analyse le bloc then
     struct ast *then_branch = parse_then(lexer);
     if (!then_branch)
     {
         ast_free(condition);
         return NULL;
     }
-    struct ast *else_branch = parse_else(lexer);
+
+    // Gestion des blocs elif et else
+    struct ast *else_branch = NULL;
+
+    while (1)
+    {
+        tok = lexer_peek(lexer);
+
+        // Cas d'un bloc `elif`
+        if (tok.type == TOKEN_ELIF)
+        {
+            lexer_pop(lexer); // Consomme 'elif'
+
+            // Analyse la condition du bloc elif
+            struct ast *elif_condition = parse_if_condition(lexer);
+            if (!elif_condition)
+            {
+                ast_free(condition);
+                ast_free(then_branch);
+                return NULL;
+            }
+
+            // Analyse le bloc then de l'elif
+            struct ast *elif_then = parse_then(lexer);
+            if (!elif_then)
+            {
+                ast_free(condition);
+                ast_free(then_branch);
+                ast_free(elif_condition);
+                return NULL;
+            }
+
+            // Crée un nœud AST pour l'elif et l'ajoute dans la branche else
+            struct ast *elif_node = ast_create_if(elif_condition, elif_then, NULL);
+            if (!elif_node)
+            {
+                ast_free(condition);
+                ast_free(then_branch);
+                ast_free(elif_condition);
+                ast_free(elif_then);
+                return NULL;
+            }
+
+            if (!else_branch)
+            {
+                else_branch = elif_node; // Premier elif devient le else_branch
+            }
+            else
+            {
+                // Ajoute cet elif comme branche else du précédent elif
+                struct ast_if_data *current_else_data = (struct ast_if_data *)else_branch->data;
+                while (current_else_data->else_branch && current_else_data->else_branch->type == AST_IF)
+                {
+                    current_else_data = (struct ast_if_data *)current_else_data->else_branch->data;
+                }
+                current_else_data->else_branch = elif_node;
+            }
+        }
+        else
+            break; // Pas de token elif, on passe à la suite
+    }
+
+    // Cas d'un bloc `else` (optionnel)
+    tok = lexer_peek(lexer);
+    if (tok.type == TOKEN_ELSE)
+    {
+        lexer_pop(lexer); // Consomme 'else'
+
+        struct ast *else_body = parse_else(lexer);
+        if (!else_body)
+        {
+            ast_free(condition);
+            ast_free(then_branch);
+            ast_free(else_branch);
+            return NULL;
+        }
+
+        if (!else_branch)
+        {
+            else_branch = else_body; // Si pas de elif, le else devient else_branch
+        }
+        else
+        {
+            // Ajoute le else au dernier elif
+            struct ast_if_data *current_else_data = (struct ast_if_data *)else_branch->data;
+            while (current_else_data->else_branch && current_else_data->else_branch->type == AST_IF)
+            {
+                current_else_data = (struct ast_if_data *)current_else_data->else_branch->data;
+            }
+            current_else_data->else_branch = else_body;
+        }
+    }
+
+    // Vérifie et consomme le token 'fi'
+    tok = lexer_peek(lexer);
+    if (tok.type != TOKEN_FI)
+    {
+        fprintf(stderr, "Syntax error: expected 'fi', got '%s'\n", tok.value ? tok.value : "NULL");
+        ast_free(condition);
+        ast_free(then_branch);
+        ast_free(else_branch);
+        return NULL;
+    }
+    lexer_pop(lexer); // Consomme 'fi'
+
     return ast_create_if(condition, then_branch, else_branch);
 }
+
 
 struct ast *parser_parse(struct lexer *lexer)
 {
@@ -514,57 +622,46 @@ void ast_free(struct ast *node)
 
 struct ast *parse_pipeline(struct lexer *lexer)
 {
-    struct ast *first_command = parse_simple_command(lexer);
-    if (!first_command)
-        return NULL;
-
-    struct token tok = lexer_peek(lexer);
-    if (tok.type != TOKEN_PIPE)
-        return first_command;
-
     struct ast *pipeline_node = ast_create(AST_PIPELINE);
-    if (!pipeline_node)
-    {
-        ast_free(first_command);
-        return NULL;
-    }
+    struct ast **commands = NULL;
+    size_t count = 0;
 
-    pipeline_node->children = malloc(sizeof(struct ast *));
-    if (!pipeline_node->children)
+    while (1)
     {
-        ast_free(pipeline_node);
-        ast_free(first_command);
-        return NULL;
-    }
+        struct ast *command = parse_simple_command(lexer);
+        if (!command)
+            break;
 
-    pipeline_node->children[0] = first_command;
-    pipeline_node->children_count = 1;
+        commands = realloc(commands, (count + 1) * sizeof(struct ast *));
+        commands[count++] = command;
 
-    while (tok.type == TOKEN_PIPE)
-    {
+        struct token tok = lexer_peek(lexer);
+        if (tok.type != TOKEN_PIPE)
+        {
+            break;
+        }
         lexer_pop(lexer);
-        struct ast *next_command = parse_simple_command(lexer);
-        if (!next_command)
-        {
-            ast_free(pipeline_node);
-            return NULL;
-        }
-
-        struct ast **new_children = realloc(
-            pipeline_node->children,
-            sizeof(struct ast *) * (pipeline_node->children_count + 1));
-        if (!new_children)
-        {
-            ast_free(next_command);
-            ast_free(pipeline_node);
-            return NULL;
-        }
-
-        pipeline_node->children = new_children;
-        pipeline_node->children[pipeline_node->children_count++] = next_command;
 
         tok = lexer_peek(lexer);
+        if (tok.type == TOKEN_NEGATION)
+        {
+            lexer_pop(lexer);
+            struct ast *negation_node = ast_create(AST_NEGATION);
+            negation_node->children = malloc(sizeof(struct ast *));
+            if (!negation_node->children)
+            {
+                perror("malloc");
+                free(negation_node);
+                ast_free(pipeline_node);
+                return NULL;
+            }
+            negation_node->children[0] = pipeline_node;
+            negation_node->children_count = 1;
+            return negation_node;
+        }
     }
 
+    pipeline_node->children = commands;
+    pipeline_node->children_count = count;
     return pipeline_node;
 }
