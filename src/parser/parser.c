@@ -89,6 +89,85 @@ static struct redirection *parse_redirection(struct lexer *lexer)
     redir->filename = strdup(filename.value);
     return redir;
 }
+static struct ast *create_assignment_node(const char *value)
+{
+    struct ast *assignment_node = ast_create(AST_SIMPLE_COMMAND);
+    if (!assignment_node)
+    {
+        printf("Failed to create assignment node\n");
+        return NULL;
+    }
+
+    struct ast_command_data *assignment_data = malloc(sizeof(*assignment_data));
+    if (!assignment_data)
+    {
+        printf("Failed to allocate memory for assignment_data\n");
+        free(assignment_node);
+        return NULL;
+    }
+
+    assignment_data->args = append_arg(NULL, value);
+    assignment_node->data = assignment_data;
+
+    return assignment_node;
+}
+
+static int add_assignment_node(struct ast *cmd_node, struct lexer *lexer)
+{
+    struct token tok = lexer_peek(lexer);
+    struct ast *assignment_node = create_assignment_node(tok.value);
+    if (!assignment_node)
+    {
+        return -1;
+    }
+
+    cmd_node->children =
+        realloc(cmd_node->children,
+                sizeof(struct ast *) * (cmd_node->children_count + 1));
+    if (!cmd_node->children)
+    {
+        perror("realloc");
+        ast_free(assignment_node);
+        return -1;
+    }
+
+    cmd_node->children[cmd_node->children_count++] = assignment_node;
+    lexer_pop(lexer); // Passe au token suivant
+    return 0;
+}
+
+static int add_argument_or_redirection(struct ast_command_data *data,
+                                       struct lexer *lexer, struct token tok)
+{
+    if (tok.type == TOKEN_VARIABLE)
+    {
+        const char *value = get_variable(tok.value);
+        data->args = append_arg(data->args, value);
+    }
+    else if (tok.type == TOKEN_WORD)
+    {
+        data->args = append_arg(data->args, tok.value);
+    }
+    else
+    {
+        struct redirection *redir = parse_redirection(lexer);
+        if (redir)
+        {
+            data->redirections = realloc(data->redirections,
+                                         sizeof(*data->redirections)
+                                             * (data->redirection_count + 1));
+            if (!data->redirections)
+            {
+                perror("realloc");
+                free(redir);
+                return -1;
+            }
+            data->redirections[data->redirection_count++] = *redir;
+            free(redir);
+        }
+    }
+    return 0;
+}
 
 static struct ast *parse_simple_command(struct lexer *lexer)
 {
@@ -101,7 +180,6 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     struct ast_command_data *data = malloc(sizeof(*data));
     if (!data)
     {
-
         free(cmd_node);
         return NULL;
     }
@@ -110,70 +188,24 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     data->redirection_count = 0;
 
     struct token tok = lexer_peek(lexer);
-    while (tok.type == TOKEN_WORD || tok.type == TOKEN_VARIABLE || tok.type == TOKEN_ASSIGNMENT || (tok.type >= TOKEN_REDIRECT_IN && tok.type <= TOKEN_REDIRECT_RW))
+    while (tok.type == TOKEN_WORD || tok.type == TOKEN_VARIABLE
+           || tok.type == TOKEN_ASSIGNMENT
+           || (tok.type >= TOKEN_REDIRECT_IN && tok.type <= TOKEN_REDIRECT_RW))
     {
         if (tok.type == TOKEN_ASSIGNMENT)
         {
-            // Création d'un nœud pour l'assignation
-            struct ast *assignment_node = ast_create(AST_SIMPLE_COMMAND);
-            if (!assignment_node)
+            if (add_assignment_node(cmd_node, lexer) != 0)
             {
-                printf("Failed to create assignment node\n");
-                continue;
-            }
-
-            struct ast_command_data *assignment_data = malloc(sizeof(*assignment_data));
-            if (!assignment_data)
-            {
-                printf("Failed to allocate memory for assignment_data\n");
-                free(assignment_node);
-                continue;
-            }
-
-            assignment_data->args = append_arg(NULL, tok.value);
-            assignment_node->data = assignment_data;
-
-            // Ajout de l'assignation comme enfant du nœud principal
-            cmd_node->children = realloc(cmd_node->children, sizeof(struct ast *) * (cmd_node->children_count + 1));
-            if (!cmd_node->children)
-            {
-                perror("realloc");
-                ast_free(assignment_node);
-                exit(EXIT_FAILURE);
-            }
-
-            cmd_node->children[cmd_node->children_count++] = assignment_node;
-
-            lexer_pop(lexer); // Passe au token suivant
-        }
-        else if (tok.type == TOKEN_WORD || tok.type == TOKEN_VARIABLE)
-        {
-            if (tok.type == TOKEN_VARIABLE)
-            {
-                const char *value = get_variable(tok.value);
-                data->args = append_arg(data->args, value);
-            }
-            else
-            {
-                data->args = append_arg(data->args, tok.value);
+                ast_free(cmd_node);
+                return NULL;
             }
         }
         else
         {
-            struct redirection *redir = parse_redirection(lexer);
-            if (redir)
+            if (add_argument_or_redirection(data, lexer, tok) != 0)
             {
-                data->redirections =
-                    realloc(data->redirections,
-                            sizeof(*data->redirections)
-                                * (data->redirection_count + 1));
-                if (!data->redirections)
-                {
-                    perror("realloc");
-                    exit(EXIT_FAILURE);
-                }
-                data->redirections[data->redirection_count++] = *redir;
-                free(redir);
+                ast_free(cmd_node);
+                return NULL;
             }
         }
         tok = lexer_pop(lexer);
@@ -182,7 +214,6 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     cmd_node->data = data;
     return cmd_node;
 }
-
 
 static const char *token_type_to_string(enum token_type type)
 {
@@ -220,7 +251,8 @@ static struct ast *parse_change(struct lexer *lexer)
     if (tok.type == TOKEN_NEGATION)
     {
         lexer_pop(lexer);
-        struct ast *child = parse_change(lexer); // Récursivité pour analyser ce qui suit
+        struct ast *child =
+            parse_change(lexer); // Récursivité pour analyser ce qui suit
         if (!child)
             return NULL;
 
@@ -298,7 +330,6 @@ static struct ast *parse_command_list(struct lexer *lexer)
     list_node->children_count = count;
     return list_node;
 }
-    
 
 static struct ast *parse_if_condition(struct lexer *lexer)
 {
@@ -593,9 +624,9 @@ struct ast *parse_pipeline(struct lexer *lexer)
             return NULL;
         }
 
-        struct ast **new_children = realloc(
-            pipeline_node->children,
-            sizeof(struct ast *) * (pipeline_node->children_count + 1));
+        struct ast **new_children =
+            realloc(pipeline_node->children,
+                    sizeof(struct ast *) * (pipeline_node->children_count + 1));
         if (!new_children)
         {
             ast_free(next_command);

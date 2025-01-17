@@ -53,7 +53,8 @@ static struct token *handle_assignment(struct lexer *lexer)
         char *value = malloc(strlen(lexer->input) + 1);
         size_t value_index = 0;
 
-        while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos]) && lexer->input[lexer->pos] != ';')
+        while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos])
+               && lexer->input[lexer->pos] != ';')
         {
             value[value_index++] = lexer->input[lexer->pos++];
         }
@@ -128,8 +129,6 @@ struct lexer *lexer_init(const char *input)
     lexer->current_tok = NULL;
     return lexer;
 }
-
-
 
 static struct token *handle_word_token(struct lexer *lexer)
 {
@@ -255,9 +254,11 @@ struct token lexer_pop(struct lexer *lexer)
 }
 
 void print_variable(void)
-{    for (size_t i = 0; i < variable_count; i++)
+{
+    for (size_t i = 0; i < variable_count; i++)
     {
-        printf("Variable name: %s, Variable value: %s\n", variables[i].name, variables[i].value);
+        printf("Variable name: %s, Variable value: %s\n", variables[i].name,
+               variables[i].value);
     }
 }
 

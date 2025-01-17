@@ -16,7 +16,6 @@ struct variable
 extern struct variable variables[MAX_VARIABLES];
 extern size_t variable_count;
 
-
 void set_verbose_mode(int enabled);
 void verbose_log(const char *message);
 

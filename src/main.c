@@ -6,14 +6,10 @@
 #include "execution/builtins.h"
 #include "execution/exec.h"
 #include "lexer/lexer.h"
+#include "lexer/token.h"
 #include "parser/ast.h"
 #include "parser/parser.h"
 #include "utils/utils.h"
-
-#include "lexer/token.h"
-
-
-
 
 const char *token_type_to_string(enum token_type type)
 {
@@ -28,7 +24,7 @@ const char *token_type_to_string(enum token_type type)
     case TOKEN_NEWLINE:
         return "NEWLINE";
     case TOKEN_PIPE:
-        return  "PIPE";
+        return "PIPE";
     case TOKEN_SEMICOLON:
         return "SEMICOLON";
     case TOKEN_REDIRECT_IN:
@@ -47,16 +43,16 @@ const char *token_type_to_string(enum token_type type)
         return "REDIRECT_RW";
     case TOKEN_NEGATION:
         return "NEGATION";
-    case TOKEN_IF: 
-        return  "IF";
+    case TOKEN_IF:
+        return "IF";
     case TOKEN_THEN:
         return "THEN";
     case TOKEN_ELIF:
-        return  "ELIF";
+        return "ELIF";
     case TOKEN_ELSE:
-        return  "ELSE";
+        return "ELSE";
     case TOKEN_FI:
-        return  "FI";
+        return "FI";
     case TOKEN_VARIABLE:
         return "VARIABLE";
     default:
@@ -67,9 +63,11 @@ const char *token_type_to_string(enum token_type type)
 void print_tokens(struct lexer *lexer)
 {
     struct token *token = NULL;
-    while ((token = lexer_next_token(lexer)) != NULL && token->type != TOKEN_EOF)
+    while ((token = lexer_next_token(lexer)) != NULL
+           && token->type != TOKEN_EOF)
     {
-        printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type), token->value);
+        printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
+               token->value);
         token_free(token);
     }
 }
@@ -124,68 +122,82 @@ ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
     return (ssize_t)pos;
 }
 
+int handle_command_line_argument(int argc, char **argv, char **buffer)
+{
+    if (argc < 3)
+    {
+        fprintf(stderr, "Error: Missing argument for -c\n");
+        fprintf(stderr, "Usage: 42sh [-c COMMAND] [SCRIPT] [OPTIONS...]\n");
+        return 127;
+    }
+    *buffer = strdup(argv[2]);
+    if (!*buffer)
+    {
+        perror("Memory allocation error");
+        return 2;
+    }
+    return 0;
+}
+
+int handle_file_input(const char *filename, char **buffer)
+{
+    FILE *input_file = fopen(filename, "r");
+    if (!input_file)
+    {
+        perror("Error opening file");
+        return 127;
+    }
+
+    fseek(input_file, 0, SEEK_END);
+    size_t buffer_size = ftell(input_file);
+    fseek(input_file, 0, SEEK_SET);
+
+    *buffer = malloc(buffer_size + 1);
+    if (!*buffer)
+    {
+        perror("Memory allocation error");
+        fclose(input_file);
+        return 2;
+    }
+
+    size_t read_size = fread(*buffer, 1, buffer_size, input_file);
+    if (read_size != buffer_size)
+    {
+        fprintf(stderr,
+                "Error reading the file. Expected %zu bytes, got %zu bytes.\n",
+                buffer_size, read_size);
+        free(*buffer);
+        fclose(input_file);
+        return 2;
+    }
+    (*buffer)[buffer_size] = '\0';
+
+    fclose(input_file);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
-    FILE *input_file = stdin;
-    int pretty_print = 0;
     char *buffer = NULL;
-    size_t buffer_size = 0;
+    int result = 0;
 
     if (argc > 1 && strcmp(argv[1], "-c") == 0)
     {
-        if (argc < 3)
-        {
-            fprintf(stderr, "Error: Missing argument for -c\n");
-            fprintf(stderr, "Usage: 42sh [-c COMMAND] [SCRIPT] [OPTIONS...]\n");
-            return 127;
-        }
-        buffer = strdup(argv[2]);
-        if (!buffer)
-        {
-            perror("Memory allocation error");
-            return 2;
-        }
+        result = handle_command_line_argument(argc, argv, &buffer);
     }
     else if (argc > 1)
     {
-        input_file = fopen(argv[1], "r");
-        if (!input_file)
-        {
-            perror("Error opening file");
-            return 127;
-        }
-
-        fseek(input_file, 0, SEEK_END);
-        buffer_size = ftell(input_file);
-        fseek(input_file, 0, SEEK_SET);
-
-        buffer = malloc(buffer_size + 1);
-        if (!buffer)
-        {
-            perror("Memory allocation error");
-            fclose(input_file);
-            return 2;
-        }
-
-        size_t read_size = fread(buffer, 1, buffer_size, input_file);
-        if (read_size != buffer_size)
-        {
-            fprintf(
-                stderr,
-                "Error reading the file. Expected %zu bytes, got %zu bytes.\n",
-                buffer_size, read_size);
-            free(buffer);
-            fclose(input_file);
-            return 2;
-        }
-        buffer[buffer_size] = '\0';
-
-        fclose(input_file);
+        result = handle_file_input(argv[1], &buffer);
     }
     else
     {
         fprintf(stderr, "Error: No input provided\n");
         return 127;
+    }
+
+    if (result != 0)
+    {
+        return result;
     }
 
     struct lexer *lexer = lexer_init(buffer);
@@ -195,19 +207,19 @@ int main(int argc, char **argv)
         free(buffer);
         return 2;
     }
+
     struct ast *ast = parser_parse(lexer);
     lexer_destroy(lexer);
-    if (pretty_print)
+    if (ast)
     {
-        ast_pretty_print(ast, 0);
+        ast_eval(ast);
+        ast_free(ast);
     }
     else
     {
-        //ast_pretty_print(ast, 0);
-        ast_eval(ast);
+        fprintf(stderr, "Failed to parse input\n");
     }
 
-    ast_free(ast);
     free(buffer);
     return last_exit_status;
 }

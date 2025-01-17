@@ -9,9 +9,8 @@
 #include <time.h>
 #include <unistd.h>
 
-
 struct variable variables[MAX_VARIABLES];
-size_t variable_count = 0; 
+size_t variable_count = 0;
 int verbose_mode = 0;
 static int last_exit_status = 0;
 static char *args[256] = { NULL };
@@ -31,7 +30,6 @@ void verbose_log(const char *message)
         fprintf(stderr, "[VERBOSE]: %s\n", message);
     }
 }
-
 
 // Recherche une variable par son nom
 static struct variable *find_variable(const char *name)
