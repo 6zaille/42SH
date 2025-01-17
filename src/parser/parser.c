@@ -139,58 +139,6 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     return cmd_node;
 }
 
-static struct ast *parse_command_or_pipeline(struct lexer *lexer)
-{
-    struct ast *pipeline_node = ast_create(AST_PIPELINE);
-    if (!pipeline_node)
-        return NULL;
-
-    struct ast **commands = NULL;
-    size_t count = 0;
-
-    while (1)
-    {
-        struct ast *command_node = parse_simple_command(lexer);
-        if (!command_node)
-        {
-            ast_free(pipeline_node);
-            return NULL;
-        }
-
-        commands = realloc(commands, sizeof(struct ast *) * (count + 1));
-        if (!commands)
-        {
-            ast_free(command_node);
-            ast_free(pipeline_node);
-            return NULL;
-        }
-
-        commands[count++] = command_node;
-
-        struct token tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_PIPE)
-        {
-            lexer_pop(lexer);
-        }
-        else
-        {
-            break;
-        }
-    }
-    pipeline_node->children = commands;
-    pipeline_node->children_count = count;
-
-    if (count == 1)
-    {
-        struct ast *single_command = commands[0];
-        free(pipeline_node->children);
-        free(pipeline_node);
-        return single_command;
-    }
-
-    return pipeline_node;
-}
-
 static const char *token_type_to_string(enum token_type type)
 {
     switch (type)
@@ -220,6 +168,47 @@ static void print_token_names(struct lexer *lexer)
     }
 }
 
+static struct ast *parse_change(struct lexer *lexer)
+{
+    struct token tok = lexer_peek(lexer);
+
+    // Cas de négation
+    if (tok.type == TOKEN_NEGATION)
+    {
+        lexer_pop(lexer);
+        struct ast *child = parse_change(lexer);
+        if (!child)
+            return NULL;
+
+        struct ast *negation_node = ast_create(AST_NEGATION);
+        if (!negation_node)
+        {
+            ast_free(child);
+            return NULL;
+        }
+
+        negation_node->children = malloc(sizeof(struct ast *));
+        if (!negation_node->children)
+        {
+            ast_free(negation_node);
+            ast_free(child);
+            return NULL;
+        }
+
+        negation_node->children[0] = child;
+        negation_node->children_count = 1;
+        return negation_node;
+    }
+
+    // Analyse d'un pipeline
+    struct ast *pipeline_node = parse_pipeline(lexer);
+    if (pipeline_node)
+        return pipeline_node;
+
+    // Cas par défaut : commande simple
+    return parse_simple_command(lexer);
+}
+
 static struct ast *parse_command_list(struct lexer *lexer)
 {
     struct ast *list_node = ast_create(AST_LIST);
@@ -231,7 +220,7 @@ static struct ast *parse_command_list(struct lexer *lexer)
 
     while (1)
     {
-        struct ast *command_node = parse_command_or_pipeline(lexer);
+        struct ast *command_node = parse_change(lexer);
         if (!command_node)
         {
             ast_free(list_node);
@@ -270,6 +259,7 @@ static struct ast *parse_command_list(struct lexer *lexer)
     list_node->children_count = count;
     return list_node;
 }
+    
 
 static struct ast *parse_if_condition(struct lexer *lexer)
 {
@@ -529,46 +519,57 @@ void ast_free(struct ast *node)
 
 struct ast *parse_pipeline(struct lexer *lexer)
 {
+    struct ast *first_command = parse_simple_command(lexer);
+    if (!first_command)
+        return NULL;
+
+    struct token tok = lexer_peek(lexer);
+    if (tok.type != TOKEN_PIPE)
+        return first_command;
+
     struct ast *pipeline_node = ast_create(AST_PIPELINE);
-    struct ast **commands = NULL;
-    size_t count = 0;
-
-    while (1)
+    if (!pipeline_node)
     {
-        struct ast *command = parse_simple_command(lexer);
-        if (!command)
-            break;
-
-        commands = realloc(commands, (count + 1) * sizeof(struct ast *));
-        commands[count++] = command;
-
-        struct token tok = lexer_peek(lexer);
-        if (tok.type != TOKEN_PIPE)
-        {
-            break;
-        }
-        lexer_pop(lexer);
-
-        tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_NEGATION)
-        {
-            lexer_pop(lexer);
-            struct ast *negation_node = ast_create(AST_NEGATION);
-            negation_node->children = malloc(sizeof(struct ast *));
-            if (!negation_node->children)
-            {
-                perror("malloc");
-                free(negation_node);
-                ast_free(pipeline_node);
-                return NULL;
-            }
-            negation_node->children[0] = pipeline_node;
-            negation_node->children_count = 1;
-            return negation_node;
-        }
+        ast_free(first_command);
+        return NULL;
     }
 
-    pipeline_node->children = commands;
-    pipeline_node->children_count = count;
+    pipeline_node->children = malloc(sizeof(struct ast *));
+    if (!pipeline_node->children)
+    {
+        ast_free(pipeline_node);
+        ast_free(first_command);
+        return NULL;
+    }
+
+    pipeline_node->children[0] = first_command;
+    pipeline_node->children_count = 1;
+
+    while (tok.type == TOKEN_PIPE)
+    {
+        lexer_pop(lexer);
+        struct ast *next_command = parse_simple_command(lexer);
+        if (!next_command)
+        {
+            ast_free(pipeline_node);
+            return NULL;
+        }
+
+        struct ast **new_children = realloc(
+            pipeline_node->children,
+            sizeof(struct ast *) * (pipeline_node->children_count + 1));
+        if (!new_children)
+        {
+            ast_free(next_command);
+            ast_free(pipeline_node);
+            return NULL;
+        }
+
+        pipeline_node->children = new_children;
+        pipeline_node->children[pipeline_node->children_count++] = next_command;
+
+        tok = lexer_peek(lexer);
+    }
+
     return pipeline_node;
 }
