@@ -1,4 +1,6 @@
 if ls zergrezg
 then echo reussi
-else echo "boom"
+elif ls rgzer
+then echo waouh
+else echo singed
 fi

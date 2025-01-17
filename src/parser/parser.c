@@ -277,7 +277,7 @@ static struct ast *parse_command_list(struct lexer *lexer)
 
     while (1)
     {
-        struct ast *command_node = parse_command_or_pipeline(lexer);
+        struct ast *command_node = parse_change(lexer);
         if (!command_node)
         {
             ast_free(list_node);
@@ -681,24 +681,34 @@ void ast_free(struct ast *node)
 
 struct ast *parse_pipeline(struct lexer *lexer)
 {
+    struct ast *first_command = parse_simple_command(lexer);
+    if (!first_command)
+        return NULL;
+
+    struct token tok = lexer_peek(lexer);
+    if (tok.type != TOKEN_PIPE)
+        return first_command;
+
     struct ast *pipeline_node = ast_create(AST_PIPELINE);
-    struct ast **commands = NULL;
-    size_t count = 0;
-
-    while (1)
+    if (!pipeline_node)
     {
-        struct ast *command = parse_simple_command(lexer);
-        if (!command)
-            break;
+        ast_free(first_command);
+        return NULL;
+    }
 
-        commands = realloc(commands, (count + 1) * sizeof(struct ast *));
-        commands[count++] = command;
+    pipeline_node->children = malloc(sizeof(struct ast *));
+    if (!pipeline_node->children)
+    {
+        ast_free(pipeline_node);
+        ast_free(first_command);
+        return NULL;
+    }
 
-        struct token tok = lexer_peek(lexer);
-        if (tok.type != TOKEN_PIPE)
-        {
-            break;
-        }
+    pipeline_node->children[0] = first_command;
+    pipeline_node->children_count = 1;
+
+    while (tok.type == TOKEN_PIPE)
+    {
         lexer_pop(lexer);
         struct ast *next_command = parse_simple_command(lexer);
         if (!next_command)
@@ -721,25 +731,7 @@ struct ast *parse_pipeline(struct lexer *lexer)
         pipeline_node->children[pipeline_node->children_count++] = next_command;
 
         tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_NEGATION)
-        {
-            lexer_pop(lexer);
-            struct ast *negation_node = ast_create(AST_NEGATION);
-            negation_node->children = malloc(sizeof(struct ast *));
-            if (!negation_node->children)
-            {
-                perror("malloc");
-                free(negation_node);
-                ast_free(pipeline_node);
-                return NULL;
-            }
-            negation_node->children[0] = pipeline_node;
-            negation_node->children_count = 1;
-            return negation_node;
-        }
     }
 
-    pipeline_node->children = commands;
-    pipeline_node->children_count = count;
     return pipeline_node;
 }
