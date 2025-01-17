@@ -176,7 +176,7 @@ static struct ast *parse_change(struct lexer *lexer)
     if (tok.type == TOKEN_NEGATION)
     {
         lexer_pop(lexer);
-        struct ast *child = parse_change(lexer);
+        struct ast *child = parse_change(lexer); // Récursivité pour analyser ce qui suit
         if (!child)
             return NULL;
 
@@ -200,13 +200,8 @@ static struct ast *parse_change(struct lexer *lexer)
         return negation_node;
     }
 
-    // Analyse d'un pipeline
-    struct ast *pipeline_node = parse_pipeline(lexer);
-    if (pipeline_node)
-        return pipeline_node;
-
-    // Cas par défaut : commande simple
-    return parse_simple_command(lexer);
+    // Analyse d'un pipeline ou d'une commande simple
+    return parse_pipeline(lexer);
 }
 
 static struct ast *parse_command_list(struct lexer *lexer)
