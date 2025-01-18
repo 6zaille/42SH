@@ -221,7 +221,8 @@ int main(int argc, char **argv)
         //ast_pretty_print(ast, 0);
         ast_eval(ast);
     }
-
     free(buffer);
+    free(pwd);
+    free(oldpwd);
     return last_exit_status;
 }
