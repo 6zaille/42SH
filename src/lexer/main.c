@@ -3,56 +3,44 @@
 
 #include "lexer.h"
 #include "token.h"
+const char *token_type_to_string(enum token_type type)
+{
+    switch (type)
+    {
+    case TOKEN_IF:
+        return "TOKEN_IF";
+    case TOKEN_THEN:
+        return "TOKEN_THEN";
+    case TOKEN_ELIF:
+        return "TOKEN_ELIF";
+    case TOKEN_ELSE:
+        return "TOKEN_ELSE";
+    case TOKEN_FI:
+        return "TOKEN_FI";
+    case TOKEN_SEMICOLON:
+        return "TOKEN_SEMICOLON";
+    case TOKEN_NEWLINE:
+        return "TOKEN_NEWLINE";
+    case TOKEN_WORD:
+        return "TOKEN_WORD";
+    case TOKEN_SINGLE_QUOTE:
+        return "TOKEN_SINGLE_QUOTE";
+    case TOKEN_EOF:
+        return "TOKEN_EOF";
+    case TOKEN_ERROR:
+        return "TOKEN_ERROR";
+    case TOKEN_PIPE:
+        return "TOKEN_PIPE";
+    case TOKEN_NEGATION:
+        return "TOKEN_NEGATION";
+    default:
+        return "UNKNOWN";
+    }
+}
 
 void print_token(struct token *tok)
 {
-    const char *type_str;
-    switch (tok->type)
-    {
-    case TOKEN_IF:
-        type_str = "TOKEN_IF";
-        break;
-    case TOKEN_THEN:
-        type_str = "TOKEN_THEN";
-        break;
-    case TOKEN_ELIF:
-        type_str = "TOKEN_ELIF";
-        break;
-    case TOKEN_ELSE:
-        type_str = "TOKEN_ELSE";
-        break;
-    case TOKEN_FI:
-        type_str = "TOKEN_FI";
-        break;
-    case TOKEN_SEMICOLON:
-        type_str = "TOKEN_SEMICOLON";
-        break;
-    case TOKEN_NEWLINE:
-        type_str = "TOKEN_NEWLINE";
-        break;
-    case TOKEN_WORD:
-        type_str = "TOKEN_WORD";
-        break;
-    case TOKEN_SINGLE_QUOTE:
-        type_str = "TOKEN_SINGLE_QUOTE";
-        break;
-    case TOKEN_EOF:
-        type_str = "TOKEN_EOF";
-        break;
-    case TOKEN_ERROR:
-        type_str = "TOKEN_ERROR";
-        break;
-    case TOKEN_PIPE:
-        type_str = "TOKEN_PIPE";
-        break;
-    case TOKEN_NEGATION:
-        type_str = "TOKEN_NEGATION";
-        break;
-    default:
-        type_str = "UNKNOWN";
-        break;
-    }
-
+    const char *type_str = token_type_to_string(tok->type);
     printf("Token: { type: %s, value: %s }\n", type_str,
            tok->value ? tok->value : "NULL");
 }

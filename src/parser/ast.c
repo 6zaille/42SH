@@ -100,7 +100,7 @@ void ast_eval(struct ast *node)
         struct ast_if_data *data = (struct ast_if_data *)node->data;
         if (!data)
         {
-            //fprintf(stderr, "Ast node if n'existe pas\n");
+            // fprintf(stderr, "Ast node if n'existe pas\n");
             return;
         }
         int condition_status = 1;
@@ -121,10 +121,11 @@ void ast_eval(struct ast *node)
         else if (data->else_branch)
         {
             ast_eval(data->else_branch);
-        } 
-        else if (!data->then_branch && !data->else_branch) 
+        }
+        else if (!data->then_branch && !data->else_branch)
         {
-        fprintf(stderr, "[ERROR] AST_IF missing 'then' or 'else' branch.\n");
+            fprintf(stderr,
+                    "[ERROR] AST_IF missing 'then' or 'else' branch.\n");
         }
         break;
     }
