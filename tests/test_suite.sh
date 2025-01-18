@@ -275,8 +275,8 @@ run_test "Negation: Simple negation" \
     '[ "$ACTUAL_EXIT_CODE" -eq 0 ]'
 
 run_test "Negation: Negated pipeline" \
-    "$BIN_PATH -c '! echo Hello | false'" 1 \
-    '[ "$ACTUAL_EXIT_CODE" -eq 1 ]'
+    "$BIN_PATH -c '! echo Hello | false'" 0 \
+    '[ "$ACTUAL_EXIT_CODE" -eq 0 ]'
 
 # Tests Quotes
 run_test "Quotes: Double quotes with variables" \
