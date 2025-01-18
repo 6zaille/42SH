@@ -306,15 +306,14 @@ static struct ast *parse_command_list(struct lexer *lexer)
         commands[count++] = command_node;
 
         tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_SEMICOLON)
+        if (tok.type == TOKEN_SEMICOLON || tok.type == TOKEN_NEWLINE)
         {
             lexer_pop(lexer);
         }
-        else if (tok.type == TOKEN_EOF || tok.type == TOKEN_NEWLINE)
+        else if (tok.type == TOKEN_EOF)
         {
             break;
         }
-
         else
         {
             ast_free(list_node);
