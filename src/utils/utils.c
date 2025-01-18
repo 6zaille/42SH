@@ -15,8 +15,8 @@ int verbose_mode = 0;
 static int last_exit_status = 0;
 static char *args[256] = { NULL };
 static size_t args_count = 0;
-static char *pwd = NULL;
-static char *oldpwd = NULL;
+char *pwd = NULL;
+char *oldpwd = NULL;
 
 void set_verbose_mode(int enabled)
 {
@@ -42,6 +42,18 @@ static struct variable *find_variable(const char *name)
         }
     }
     return NULL;
+}
+
+void init_shell(void)
+{
+    char buffer[4096];
+    if (getcwd(buffer, sizeof(buffer)))
+    {
+        pwd = strdup(buffer);
+        oldpwd = NULL;
+        set_variable("PWD", pwd);
+        set_variable("OLDPWD", "");
+    }
 }
 
 // Ajoute ou met à jour une variable

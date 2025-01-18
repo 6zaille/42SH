@@ -15,6 +15,8 @@ struct variable
 
 extern struct variable variables[MAX_VARIABLES];
 extern size_t variable_count;
+extern char *pwd;
+extern char *oldpwd;
 
 void set_verbose_mode(int enabled);
 void verbose_log(const char *message);
@@ -24,5 +26,6 @@ void set_variable(const char *name, const char *value);
 const char *get_variable(const char *name);
 char *substitute_variables(const char *input);
 void free_variables(void);
+void init_shell(void);
 
 #endif /* !UTILS_H */

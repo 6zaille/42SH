@@ -180,6 +180,7 @@ int main(int argc, char **argv)
 {
     char *buffer = NULL;
     int result = 0;
+    init_shell();
 
     if (argc > 1 && strcmp(argv[1], "-c") == 0)
     {

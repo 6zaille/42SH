@@ -192,7 +192,7 @@ run_test "If-Then-Else: Invalid command" \
     "./src/42sh -c 'if command_not_found; then echo ok; else echo error; fi'" 127 \
     'echo "$OUTPUT" | grep -q "^error$"'
 
-run_test "If-Elif: Multiple commands in elif" \
+run_test "If-Elif: Multiple commands in elif + ET" \
     "./src/42sh -c 'if false; then echo no; elif echo first && echo second; then echo good; else echo bad; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^first$" && echo "$OUTPUT" | grep -q "^second$" && echo "$OUTPUT" | grep -q "^good$"'
 
@@ -200,11 +200,11 @@ run_test "If-Then: No else block" \
     "./src/42sh -c 'if echo toto; then echo success; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^toto$" && echo "$OUTPUT" | grep -q "^success$"'
 
-run_test "If-Then-Else: Complex logic" \
+run_test "If-Then-Else: Complex logic + ET" \
     "./src/42sh -c 'if echo toto && ls /; then echo passed; else echo failed; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^toto$" && echo "$OUTPUT" | grep -q "^passed$"'
 
-run_test "If-Elif-Else: Mixed commands" \
+run_test "If-Elif-Else: Mixed commands + ET" \
     "./src/42sh -c 'if false; then echo wrong; elif echo running && false; then echo also wrong; else echo correct; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^running$" && echo "$OUTPUT" | grep -q "^correct$"'
 
