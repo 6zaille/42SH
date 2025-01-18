@@ -70,8 +70,8 @@ void print_tokens(struct lexer *lexer)
                token->value);
         token_free(token);
     }
-            printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
-               token->value);
+    printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
+           token->value);
 }
 
 ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
@@ -214,7 +214,7 @@ int main(int argc, char **argv)
     lexer_destroy(lexer);
     if (ast)
     {
-        //ast_pretty_print(ast, 0);
+        // ast_pretty_print(ast, 0);
         ast_eval(ast);
         ast_free(ast);
     }
