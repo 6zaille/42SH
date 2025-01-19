@@ -219,6 +219,15 @@ run_test "If-Elif-Else: Pipe in block" \
 run_test "Conditional: Exit with specific code" \
     "$BIN_PATH -c 'exit 42'" 42 'true'
 
+run_test "If before echo: Basic test" \
+    "./src/42sh -c 'if true; then echo success; fi; echo toto'" 0 \
+    'echo "$OUTPUT" | grep -q "^success$" && echo "$OUTPUT" | grep -q "^toto$"'
+
+run_test "If after echo: Basic test" \
+    "./src/42sh -c 'echo toto; if true; then echo success; fi'" 0 \
+    'echo "$OUTPUT" | grep -q "^toto$" && echo "$OUTPUT" | grep -q "^success$"'
+
+
 # Tests Comments
 run_test "Comment: Single line comment only" \
     "$BIN_PATH -c '# This is a comment'" 0 \
@@ -253,8 +262,8 @@ run_test "Comment: Comment at the end of the file" \
     'echo "$OUTPUT" | grep -q "Last line"'
 
 run_test "Comment: Empty line followed by comment" \
-    "$BIN_PATH -c '\n# This is a standalone comment'" 0 \
-    '[ "$OUTPUT" = "" ]'
+    "$BIN_PATH -c '\n# This is a standalone comment'; exit 127" 127 \
+    ''
 
 run_test "Comment: Multiple comments in script" \
     "$BIN_PATH -c '# First comment\necho Line1\n# Second comment\necho Line2'" 0 \

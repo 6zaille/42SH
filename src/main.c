@@ -210,19 +210,34 @@ int main(int argc, char **argv)
         free(buffer);
         return 2;
     }
-    struct ast *ast = parser_parse(lexer);
-    lexer_destroy(lexer);
-    if (ast)
+    struct token tok = lexer_peek(lexer);
+        if (tok.type == TOKEN_NEWLINE)
+        {
+            fprintf(stderr, "command not found\n");
+            return 127;
+        }
+    int flag = 0;
+    while (1)
     {
-        // ast_pretty_print(ast, 0);
+        tok = lexer_peek(lexer);
+        
+        if (tok.type == TOKEN_EOF)
+            break;
+        if (flag == 1)
+        {
+            lexer_pop(lexer);
+        }
+        struct ast *ast = parser_parse(lexer);
+        if (!ast)
+        {
+            fprintf(stderr, "ast pas créé\n");
+            break;
+        }
+        flag = 1;
         ast_eval(ast);
         ast_free(ast);
     }
-    else
-    {
-        // ast_pretty_print(ast, 0);
-        ast_eval(ast);
-    }
+    lexer_destroy(lexer);
     free(buffer);
     free(pwd);
     free(oldpwd);
