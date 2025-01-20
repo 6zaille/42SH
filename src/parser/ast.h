@@ -30,16 +30,6 @@ enum redirection_type
     REDIR_RW // <>
 };
 
-enum ast_type
-{
-    AST_COMMAND,
-    AST_SIMPLE_COMMAND,
-    AST_LIST,
-    AST_IF,
-    AST_PIPELINE,
-    AST_NEGATION
-};
-
 struct ast_if_data
 {
     struct ast *condition;
