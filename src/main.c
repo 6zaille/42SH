@@ -10,7 +10,7 @@
 #include "parser/ast.h"
 #include "parser/parser.h"
 #include "utils/utils.h"
-
+/*
 const char *token_type_to_string(enum token_type type)
 {
     switch (type)
@@ -58,7 +58,7 @@ const char *token_type_to_string(enum token_type type)
     default:
         return "UNKNOWN";
     }
-}
+}*/
 
 void print_tokens(struct lexer *lexer)
 {
@@ -66,12 +66,12 @@ void print_tokens(struct lexer *lexer)
     while ((token = lexer_next_token(lexer)) != NULL
            && token->type != TOKEN_EOF)
     {
-        printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
-               token->value);
+        //printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
+        //       token->value);
         token_free(token);
     }
-    printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
-           token->value);
+    //printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
+    //       token->value);
 }
 
 ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
