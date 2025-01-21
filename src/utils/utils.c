@@ -99,7 +99,7 @@ const char *get_variable(const char *name)
     {
         if (args_count == 0)
         {
-            return "";
+            return NULL;
         }
         size_t pos = 0;
         for (size_t i = 0; i < args_count; i++)

@@ -139,6 +139,10 @@ static int add_argument_or_redirection(struct ast_command_data *data,
     }
     else if (tok.type == TOKEN_WORD)
     {
+        if (strcmp(tok.value,"")==0)
+        {
+            return 0;
+        }
         data->args = append_arg(data->args, tok.value);
     }
     else
