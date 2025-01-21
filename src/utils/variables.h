@@ -1,7 +1,8 @@
 #ifndef VARIABLES_H
 #define VARIABLES_H
 
-struct variable {
+struct variable
+{
     char *name;
     char *value;
 };

@@ -66,12 +66,13 @@ void print_tokens(struct lexer *lexer)
     while ((token = lexer_next_token(lexer)) != NULL
            && token->type != TOKEN_EOF)
     {
-        //printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
-        //       token->value);
+        // printf("Token: Type=%s, Value=%s\n",
+        // token_type_to_string(token->type),
+        //        token->value);
         token_free(token);
     }
-    //printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
-    //       token->value);
+    // printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
+    //        token->value);
 }
 
 ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
@@ -211,16 +212,16 @@ int main(int argc, char **argv)
         return 2;
     }
     struct token tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_NEWLINE)
-        {
-            fprintf(stderr, "command not found\n");
-            return 127;
-        }
+    if (tok.type == TOKEN_NEWLINE)
+    {
+        fprintf(stderr, "command not found\n");
+        return 127;
+    }
     int flag = 0;
     while (1)
     {
         tok = lexer_peek(lexer);
-        
+
         if (tok.type == TOKEN_EOF)
             break;
         if (flag == 1)

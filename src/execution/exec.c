@@ -20,7 +20,7 @@ struct saved_fd
     int original_fd;
     int saved_fd;
 };
-
+extern int loop_running;
 static struct saved_fd *saved_fds = NULL;
 static size_t saved_fd_count = 0;
 
@@ -130,11 +130,26 @@ int execute_command(int argc, char **argv)
         if (argv[i] == NULL)
             continue;
 
-        if (handle_redirection(argv, i, (redirection_t){">", STDOUT_FILENO, O_WRONLY | O_CREAT | O_TRUNC, 0644}, 0)
-            || handle_redirection(argv, i, (redirection_t){">>", STDOUT_FILENO, O_WRONLY | O_CREAT, 0644}, 1)
-            || handle_redirection(argv, i, (redirection_t){"<", STDIN_FILENO, O_RDONLY, 0}, 0)
-            || handle_redirection(argv, i, (redirection_t){"2>", STDERR_FILENO, O_WRONLY | O_CREAT | O_TRUNC, 0644}, 0)
-            || handle_redirection(argv, i, (redirection_t){"<>", STDIN_FILENO, O_RDWR | O_CREAT, 0644}, 0)
+        if (handle_redirection(argv, i,
+                               (redirection_t){ ">", STDOUT_FILENO,
+                                                O_WRONLY | O_CREAT | O_TRUNC,
+                                                0644 },
+                               0)
+            || handle_redirection(argv, i,
+                                  (redirection_t){ ">>", STDOUT_FILENO,
+                                                   O_WRONLY | O_CREAT, 0644 },
+                                  1)
+            || handle_redirection(
+                argv, i, (redirection_t){ "<", STDIN_FILENO, O_RDONLY, 0 }, 0)
+            || handle_redirection(argv, i,
+                                  (redirection_t){ "2>", STDERR_FILENO,
+                                                   O_WRONLY | O_CREAT | O_TRUNC,
+                                                   0644 },
+                                  0)
+            || handle_redirection(
+                argv, i,
+                (redirection_t){ "<>", STDIN_FILENO, O_RDWR | O_CREAT, 0644 },
+                0)
             || handle_fd_redirection(argv, i, "<&", STDIN_FILENO)
             || handle_fd_redirection(argv, i, ">&", STDOUT_FILENO))
         {
@@ -208,6 +223,11 @@ int execute_builtin(int argc, char **argv)
     if (strcmp(argv[0], "exit") == 0)
     {
         return builtin_exit(argc, argv);
+    }
+    if (strcmp(argv[0], "break") == 0)
+    {
+        loop_running = 0; // Interrompt la boucle
+        return 0;
     }
     return -1;
 }

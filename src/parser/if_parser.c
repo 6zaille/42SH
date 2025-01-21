@@ -1,7 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
 
-#include "parser.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +7,7 @@
 #include "../lexer/lexer.h"
 #include "../lexer/token.h"
 #include "ast.h"
+#include "parser.h"
 
 static struct ast *ast_create_if(struct ast *condition, struct ast *then_branch,
                                  struct ast *else_branch)

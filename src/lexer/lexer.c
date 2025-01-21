@@ -105,6 +105,12 @@ enum token_type check_keyword(const char *word)
         return TOKEN_ELSE;
     if (strcmp(word, "fi") == 0)
         return TOKEN_FI;
+    if (strcmp(word, "while") == 0)
+        return TOKEN_WHILE;
+    if (strcmp(word, "do") == 0)
+        return TOKEN_DO;
+    if (strcmp(word, "done") == 0)
+        return TOKEN_DONE;
 
     return TOKEN_WORD;
 }
