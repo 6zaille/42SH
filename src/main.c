@@ -70,12 +70,13 @@ void print_tokens(struct lexer *lexer)
     while ((token = lexer_next_token(lexer)) != NULL
            && token->type != TOKEN_EOF)
     {
-        //printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
-        //       token->value);
+        // printf("Token: Type=%s, Value=%s\n",
+        // token_type_to_string(token->type),
+        //        token->value);
         token_free(token);
     }
-    //printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
-    //       token->value);
+    // printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
+    //        token->value);
 }
 
 ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
@@ -182,23 +183,23 @@ int handle_file_input(const char *filename, char **buffer)
     return 0;
 }
 
-void init_args(int argc,char **argv)
+void init_args(int argc, char **argv)
 {
     args_count = argc - 2;
     for (size_t i = 2; i < (size_t)argc; i++)
     {
-        args[i-2] = argv[i];
+        args[i - 2] = argv[i];
     }
 }
 
-void init_variables(int argc,char **argv)
+void init_variables(int argc, char **argv)
 {
     set_variable("0", argv[1]);
     for (size_t i = 1; i < (size_t)argc - 1; i++)
     {
         char var_name[30];
         snprintf(var_name, 30, "%zu", i);
-        set_variable(var_name, argv[i+1]);
+        set_variable(var_name, argv[i + 1]);
     }
 }
 
@@ -282,14 +283,14 @@ int handle_stdin_mode(void)
         }
         else
         {
-            //printf("42sh> ");
+            // printf("42sh> ");
             fflush(stdout);
         }
         lexer_destroy(lexer);
-        
-        //lexer->input = NULL;
-        
-        //free(lexer);
+
+        // lexer->input = NULL;
+
+        // free(lexer);
         free(temp_input);
     }
 
@@ -298,8 +299,6 @@ int handle_stdin_mode(void)
 
     return 0;
 }
-
-
 
 int main(int argc, char **argv)
 {
@@ -340,16 +339,16 @@ int main(int argc, char **argv)
         return 2;
     }
     struct token tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_NEWLINE)
-        {
-            fprintf(stderr, "command not found\n");
-            return 127;
-        }
+    if (tok.type == TOKEN_NEWLINE)
+    {
+        fprintf(stderr, "command not found\n");
+        return 127;
+    }
     int flag = 0;
     while (1)
     {
         tok = lexer_peek(lexer);
-        
+
         if (tok.type == TOKEN_EOF)
             break;
         if (flag == 1)

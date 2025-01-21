@@ -3,6 +3,7 @@
 #include "parser.h"
 
 int last_exit_status = 0;
+int loop_running = 1;
 
 void ast_eval(struct ast *node)
 {
@@ -14,10 +15,24 @@ void ast_eval(struct ast *node)
     {
     case AST_SIMPLE_COMMAND: {
         struct ast_command_data *data = (struct ast_command_data *)node->data;
-        if (!data || !data->args)
+        if (!data || !data->args || !data->args[0])
+        {
+            last_exit_status = 1;
             return;
+        }
+        const char *cmd = data->args[0];
 
-        size_t argc = 0;
+        // Gestion de 'break'
+        if (strcmp(cmd, "break") == 0)
+        {
+            // Met fin à la boucle en définissant une variable globale ou un
+            // drapeau
+            loop_running =
+                0; // Définir `loop_running` comme une variable globale
+            last_exit_status = 0; // Indiquer un succès
+            return;
+        }
+        int argc = 0;
         while (data->args[argc] != NULL)
         {
             argc++;
@@ -95,6 +110,60 @@ void ast_eval(struct ast *node)
         }
         break;
     }
+    case AST_WHILE: {
+        struct ast *condition = node->children[0];
+        struct ast *body = node->children[1];
+
+        // printf("Evaluating while loop...\n");
+        while (loop_running)
+        {
+            ast_eval(condition);
+
+            if (last_exit_status != 0)
+            {
+                // printf("While loop condition failed, exiting loop...\n");
+                break;
+            }
+
+            ast_eval(body);
+        }
+        // Réinitialisez la variable après la boucle
+        loop_running = 1;
+        last_exit_status = 0;
+        break;
+    }
+
+    case AST_UNTIL: {
+        struct ast *condition = node->children[0];
+        struct ast *body = node->children[1];
+
+        // printf("Evaluating until loop...\n");
+
+        while (1)
+        {
+            // Évalue la condition
+            ast_eval(condition);
+
+            // Si la condition devient vraie, sort de la boucle
+            if (last_exit_status == 0)
+            {
+                // printf("Until loop condition met, exiting loop...\n");
+                break;
+            }
+
+            // Évalue le corps de la boucle
+            ast_eval(body);
+
+            // Si une commande `break` a été exécutée, sortir de la boucle
+            if (loop_running == 0)
+            {
+                // printf("Until loop interrupted by break...\n");
+                loop_running = 1; // Réinitialise pour les prochaines boucles
+                break;
+            }
+        }
+        break;
+    }
 
     case AST_IF: {
         struct ast_if_data *data = (struct ast_if_data *)node->data;
@@ -168,16 +237,22 @@ void ast_pretty_print(struct ast *node, int depth)
         break;
 
     case AST_SIMPLE_COMMAND: {
-        printf("SIMPLE_COMMAND");
         struct ast_command_data *data = (struct ast_command_data *)node->data;
-        if (data && data->args)
+        if (!data || !data->args || !data->args[0])
         {
-            for (size_t i = 0; data->args[i]; i++)
-            {
-                printf(" %s", data->args[i]);
-            }
+            last_exit_status = 1;
+            return;
         }
-        printf("\n");
+
+        // Calcule le nombre d'arguments
+        size_t argc = 0;
+        while (data->args[argc] != NULL)
+        {
+            argc++;
+        }
+
+        // Exécute la commande
+        last_exit_status = execute_command((int)argc, data->args);
         break;
     }
 

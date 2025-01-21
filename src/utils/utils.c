@@ -16,7 +16,6 @@ static int last_exit_status = 0;
 char *pwd = NULL;
 char *oldpwd = NULL;
 
-
 void set_verbose_mode(int enabled)
 {
     verbose_mode = enabled;

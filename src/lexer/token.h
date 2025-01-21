@@ -16,6 +16,7 @@ enum token_type
     TOKEN_SINGLE_QUOTE,
     TOKEN_EOF,
     TOKEN_ERROR,
+    TOKEN_OK,
     TOKEN_PIPE,
     TOKEN_REDIRECT_IN, // <
     TOKEN_REDIRECT_OUT, // >

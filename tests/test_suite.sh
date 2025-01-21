@@ -297,13 +297,72 @@ run_test "Quotes: Escape characters" \
     'echo "$OUTPUT" | grep -qx "Hello \"World\""'
 
 # Tests Loops
-run_test "Loop: While loop" \
+run_test "Loop: While loop counter" \
     "$BIN_PATH -c 'COUNTER=0; while [ \$COUNTER -lt 3 ]; do echo \$COUNTER; COUNTER=\$((COUNTER + 1)); done'" 0 \
     'echo "$OUTPUT" | grep -qx "0" && echo "$OUTPUT" | grep -qx "2"'
 
-run_test "Loop: Until loop" \
-    "$BIN_PATH -c 'COUNTER=5; until [ \$COUNTER -eq 0 ]; do echo \$COUNTER; COUNTER=\$((COUNTER - 1)); done'" 0 \
-    'echo "$OUTPUT" | grep -qx "5" && echo "$OUTPUT" | grep -qx "1"'
+run_test "Loop: While false" \
+    "$BIN_PATH -c 'while false; do echo Never; done'" 0 \
+    '[ -z "$OUTPUT" ]'
+
+
+run_test "Loop: While with break" \
+    "$BIN_PATH -c 'while true; do echo Running; break; done'" 0 \
+    'echo "$OUTPUT" | grep -qx "Running"'
+
+
+run_test "Loop: While multiple commands" \
+    "$BIN_PATH -c 'while true; do echo One; echo Two; break; done'" 0 \
+    'echo "$OUTPUT" | grep -qx "One" && echo "$OUTPUT" | grep -qx "Two"'
+
+
+run_test "Loop: While with redirection" \
+    "$BIN_PATH -c 'while true; do echo Logging >> log.txt; break; done; cat log.txt'" 0 \
+    'echo "$OUTPUT" | grep -qx "Logging"'
+
+
+run_test "Loop: While with variable increment" \
+    "$BIN_PATH -c 'COUNTER=0; while [ \$COUNTER -lt 3 ]; do echo \$COUNTER; COUNTER=\$((COUNTER + 1)); done'" 0 \
+    'echo "$OUTPUT" | grep -qx "0" && echo "$OUTPUT" | grep -qx "2"'
+
+run_test "Loop: While empty body" \
+    "$BIN_PATH -c 'while true; do break; done'" 0 \
+    '[ -z "$OUTPUT" ]'
+
+
+
+run_test "Loop: Until true" \
+    "$BIN_PATH -c 'until true; do echo Never; done'" 0 \
+    '[ -z "$OUTPUT" ]'
+
+run_test "Loop: Until with break" \
+    "$BIN_PATH -c 'until false; do echo Running; break; done'" 0 \
+    'echo "$OUTPUT" | grep -qx "Running"'
+
+
+run_test "Until: True immediately" \
+    "$BIN_PATH -c 'until true; do echo One; echo Two; break; done'" 0 \
+    '[ -z "$OUTPUT" ]'
+
+
+run_test "Loop: Until with redirection" \
+    "$BIN_PATH -c 'until true; do echo Logging >> log.txt; break; done; cat log.txt'" 0 \
+    'echo "$OUTPUT" | grep -qx "Logging"'
+
+
+run_test "Loop: Until with variable decrement" \
+    "$BIN_PATH -c 'COUNTER=3; until [ \$COUNTER -eq 0 ]; do echo \$COUNTER; COUNTER=\$((COUNTER - 1)); done'" 0 \
+    'echo "$OUTPUT" | grep -qx "3" && echo "$OUTPUT" | grep -qx "1"'
+
+
+run_test "Loop: Until empty body" \
+    "$BIN_PATH -c 'until true; do break; done'" 0 \
+    '[ -z "$OUTPUT" ]'
+
+
+run_test "Loop: Until never true" \
+    "$BIN_PATH -c 'until false; do echo Running; break; done'" 0 \
+    'echo "$OUTPUT" | grep -qx "Running"'
 
 run_test "Loop: For loop" \
     "$BIN_PATH -c 'for i in 1 2 3; do echo \$i; done'" 0 \
@@ -339,6 +398,8 @@ run_test "Variable: Special variable \$\$" \
 run_test "Combined: Pipeline and redirection" \
     "$BIN_PATH -c 'echo Hello | tr H J > output.txt'; grep -qx \"Jello\" output.txt && rm output.txt" 0 \
     'true'
+
+rm log.txt
 
 # Final Report
 echo "====================================="

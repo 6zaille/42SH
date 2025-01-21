@@ -9,8 +9,6 @@ static int flag_n = 0;
 static int i = 1;
 static int is_option = 1;
 
-
-
 int builtin_echo(int argc, char **argv)
 {
     while (i < argc && argv[i][0] == '-' && argv[i][1] != '\0')

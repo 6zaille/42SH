@@ -4,12 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "variables.h"
-#include "pwd.h"
-#include "oldpwd.h"
-#include "variables_count.h"
+
 #include "args.h"
 #include "args_count.h"
+#include "oldpwd.h"
+#include "pwd.h"
+#include "variables.h"
+#include "variables_count.h"
 
 void set_verbose_mode(int enabled);
 void verbose_log(const char *message);
