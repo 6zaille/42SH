@@ -6,6 +6,7 @@
 #include "ast.h"
 #include "parser.h"
 
+
 // Fonction pour afficher l'AST pour le debug
 void pretty_print_ast(struct ast *node, int depth)
 {

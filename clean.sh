@@ -26,6 +26,7 @@ rm test-driver;
 rm file.txt;
 rm input.txt;
 rm output.txt;
+rm out;
 rm clean;
 clear;
 echo -e "🐒🐒🐒🐒🐒 XingXing a mangé toutes les trash files 🐒🐒🐒🐒🐒"

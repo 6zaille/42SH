@@ -1,20 +1,25 @@
-#!/bin/sh
+#!/bin/bash
 
 printf "Testsuite 42SH is cooking\n"
 printf "=====================================\n"
+
+# Variables globales
 STATUS=0
 TOTAL_TESTS=0
 PASSED_TESTS=0
 FAILED_TESTS=0
-BIN_PATH="./src/42sh"
-
-if [ ! -f "$BIN_PATH" ]; then
-    printf "chef il manque le binary 42sh %s\n" "$BIN_PATH"
-    exit 1
-fi
-
 FAILED_TEST_NAMES=""
 
+# Vérifications initiales
+if [ -z "$BIN_PATH" ]; then
+    BIN_PATH="$(pwd)/src/42sh"
+fi
+
+if [ -z "$OUTPUT_FILE" ]; then
+    OUTPUT_FILE="$(pwd)/out"
+fi
+
+# Fonction pour exécuter un test
 run_test() {
     TEST_NAME=$1
     COMMAND=$2
@@ -22,7 +27,7 @@ run_test() {
     CHECK_CMD=$4
 
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
-    OUTPUT=$(eval "$COMMAND" 2>&1)
+    OUTPUT=$(timeout 5s sh -c "$COMMAND" 2>&1)
     ACTUAL_EXIT_CODE=$?
 
     if [ $ACTUAL_EXIT_CODE -eq $EXPECTED_EXIT_CODE ] && eval "$CHECK_CMD"; then
@@ -38,11 +43,7 @@ run_test() {
     fi
 
     RESET="\033[0m"
-    if [ $TOTAL_TESTS -gt 9 ]; then
-        printf "Test %d: %b%s%b\n" "$TOTAL_TESTS" "$COLOR" "$STATUS_MSG" "$RESET"
-    else
-        printf "Test %d:  %b%s%b\n" "$TOTAL_TESTS" "$COLOR" "$STATUS_MSG" "$RESET"
-    fi
+    printf "Test %d: %b%s%b\n" "$TOTAL_TESTS" "$COLOR" "$STATUS_MSG" "$RESET"
 }
 
 # Tests Echo Commands
@@ -165,66 +166,66 @@ run_test "Redirection: Append redirection" \
 
 # Tests Conditional Statements
 run_test "If-Then-Else: Command succeeds" \
-    "./src/42sh -c 'if echo toto; then ls; else echo ko; fi'" 0 \
+    "$BIN_PATH -c 'if echo toto; then ls; else echo ko; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^toto$"'
 
 run_test "If-Then-Else: Command fails" \
-    "./src/42sh -c 'if false; then echo ok; else echo ko; fi'" 0 \
+    "$BIN_PATH -c 'if false; then echo ok; else echo ko; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^ko$"'
 
 run_test "If-Elif-Else: Elif condition true" \
-    "./src/42sh -c 'if false; then echo no; elif echo maybe; then echo yes; else echo never; fi'" 0 \
+    "$BIN_PATH -c 'if false; then echo no; elif echo maybe; then echo yes; else echo never; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^maybe$" && echo "$OUTPUT" | grep -q "^yes$"'
 
 run_test "If-Elif-Else: If condition true" \
-    "./src/42sh -c 'if echo toto; then echo itworks; elif echo nope; then echo wrong; else echo never; fi'" 0 \
+    "$BIN_PATH -c 'if echo toto; then echo itworks; elif echo nope; then echo wrong; else echo never; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^toto$" && echo "$OUTPUT" | grep -q "^itworks$"'
 
 run_test "If-Elif-Else: Else executed" \
-    "./src/42sh -c 'if false; then echo fail; elif false; then echo failagain; else echo succeed; fi'" 0 \
+    "$BIN_PATH -c 'if false; then echo fail; elif false; then echo failagain; else echo succeed; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^succeed$"'
 
 run_test "If-Then: LS command in then" \
-    "./src/42sh -c 'if echo toto; then ls /; fi'" 0 \
+    "$BIN_PATH -c 'if echo toto; then ls /; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^toto$"'
 
 run_test "If-Then-Else: Invalid command" \
-    "./src/42sh -c 'if command_not_found; then echo ok; else echo error; fi'" 127 \
+    "$BIN_PATH -c 'if command_not_found; then echo ok; else echo error; fi'" 127 \
     'echo "$OUTPUT" | grep -q "^error$"'
 
 run_test "If-Elif: Multiple commands in elif + ET" \
-    "./src/42sh -c 'if false; then echo no; elif echo first && echo second; then echo good; else echo bad; fi'" 0 \
+    "$BIN_PATH -c 'if false; then echo no; elif echo first && echo second; then echo good; else echo bad; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^first$" && echo "$OUTPUT" | grep -q "^second$" && echo "$OUTPUT" | grep -q "^good$"'
 
 run_test "If-Then: No else block" \
-    "./src/42sh -c 'if echo toto; then echo success; fi'" 0 \
+    "$BIN_PATH -c 'if echo toto; then echo success; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^toto$" && echo "$OUTPUT" | grep -q "^success$"'
 
 run_test "If-Then-Else: Complex logic + ET" \
-    "./src/42sh -c 'if echo toto && ls /; then echo passed; else echo failed; fi'" 0 \
+    "$BIN_PATH -c 'if echo toto && ls /; then echo passed; else echo failed; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^toto$" && echo "$OUTPUT" | grep -q "^passed$"'
 
 run_test "If-Elif-Else: Mixed commands + ET" \
-    "./src/42sh -c 'if false; then echo wrong; elif echo running && false; then echo also wrong; else echo correct; fi'" 0 \
+    "$BIN_PATH -c 'if false; then echo wrong; elif echo running && false; then echo also wrong; else echo correct; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^running$" && echo "$OUTPUT" | grep -q "^correct$"'
 
 run_test "If-Then: Redirection in block" \
-    "./src/42sh -c 'if echo toto > output.txt; then echo redirected; fi'" 0 \
+    "$BIN_PATH -c 'if echo toto > output.txt; then echo redirected; fi'" 0 \
     'grep -q "^toto$" output.txt && echo "$OUTPUT" | grep -q "^redirected$" && rm output.txt'
 
 run_test "If-Elif-Else: Pipe in block" \
-    "./src/42sh -c 'if false; then echo no; elif echo pipe | grep p; then echo valid; else echo invalid; fi'" 0 \
+    "$BIN_PATH -c 'if false; then echo no; elif echo pipe | grep p; then echo valid; else echo invalid; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^pipe$" && echo "$OUTPUT" | grep -q "^valid$"'
 
 run_test "Conditional: Exit with specific code" \
     "$BIN_PATH -c 'exit 42'" 42 'true'
 
 run_test "If before echo: Basic test" \
-    "./src/42sh -c 'if true; then echo success; fi; echo toto'" 0 \
+    "$BIN_PATH -c 'if true; then echo success; fi; echo toto'" 0 \
     'echo "$OUTPUT" | grep -q "^success$" && echo "$OUTPUT" | grep -q "^toto$"'
 
 run_test "If after echo: Basic test" \
-    "./src/42sh -c 'echo toto; if true; then echo success; fi'" 0 \
+    "$BIN_PATH -c 'echo toto; if true; then echo success; fi'" 0 \
     'echo "$OUTPUT" | grep -q "^toto$" && echo "$OUTPUT" | grep -q "^success$"'
 
 
@@ -340,10 +341,18 @@ run_test "Combined: Pipeline and redirection" \
     "$BIN_PATH -c 'echo Hello | tr H J > output.txt'; grep -qx \"Jello\" output.txt && rm output.txt" 0 \
     'true'
 
-# Final Report
-echo "====================================="
-PERCENT_PASSED=$((PASSED_TESTS * 100 / TOTAL_TESTS))
+# Mode couverture
+if [ "$COVERAGE" = "yes" ]; then
+    printf "Running in coverage mode...\n"
+    # Ajoutez ici l'appel à vos tests unitaires ou des outils de couverture comme gcov/lcov.
+fi
 
+# Calcul des résultats finaux
+PERCENT_PASSED=$((PASSED_TESTS * 100 / TOTAL_TESTS))
+echo $PERCENT_PASSED > "$OUTPUT_FILE"
+
+# Rapport final
+echo "====================================="
 if [ $PERCENT_PASSED -ge 90 ]; then
     COLOR="\033[32m" # Vert
 elif [ $PERCENT_PASSED -ge 50 ]; then

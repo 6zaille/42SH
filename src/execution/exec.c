@@ -13,7 +13,7 @@
 
 #ifndef O_CLOEXEC
 #    define O_CLOEXEC FD_CLOEXEC
-#endif
+#endif /* O_CLOEXEC */
 
 struct saved_fd
 {
@@ -24,14 +24,12 @@ struct saved_fd
 static struct saved_fd *saved_fds = NULL;
 static size_t saved_fd_count = 0;
 
-// Déclaration des fonctions
 static void save_fd(int fd);
-static void restore_fds();
+static void restore_fds(void);
 static void apply_redirection(const char *filename, int fd, int flags,
                               int mode);
 static void redirect_fd(int old_fd, int new_fd);
 
-// Implémentation des fonctions
 static void save_fd(int fd)
 {
     struct saved_fd *new_saved_fds =
@@ -52,7 +50,7 @@ static void save_fd(int fd)
     saved_fd_count++;
 }
 
-static void restore_fds()
+static void restore_fds(void)
 {
     for (size_t i = 0; i < saved_fd_count; i++)
     {
@@ -95,14 +93,18 @@ static void redirect_fd(int old_fd, int new_fd)
     }
 }
 
-int handle_redirection(char **argv, int i, const char *symbol, int fd,
-                       int flags, int mode)
+int handle_redirection(char **argv, int i, redirection_t redir, int append_mode)
 {
-    if (strcmp(argv[i], symbol) == 0 && argv[i + 1])
+    if (strcmp(argv[i], redir.symbol) == 0 && argv[i + 1])
     {
-        apply_redirection(argv[i + 1], fd, flags, mode);
+        int flags = redir.flags;
+        if (append_mode)
+        {
+            flags |= O_APPEND;
+        }
+        apply_redirection(argv[i + 1], redir.fd, flags, redir.mode);
         argv[i] = NULL;
-        argv[i + 1] = NULL; // Supprime les arguments de redirection
+        argv[i + 1] = NULL;
         return 1;
     }
     return 0;
@@ -115,7 +117,7 @@ int handle_fd_redirection(char **argv, int i, const char *symbol, int target_fd)
         int fd = atoi(argv[i + 1]);
         redirect_fd(fd, target_fd);
         argv[i] = NULL;
-        argv[i + 1] = NULL; // Supprime les arguments de redirection
+        argv[i + 1] = NULL;
         return 1;
     }
     return 0;
@@ -128,15 +130,11 @@ int execute_command(int argc, char **argv)
         if (argv[i] == NULL)
             continue;
 
-        if (handle_redirection(argv, i, ">", STDOUT_FILENO,
-                               O_WRONLY | O_CREAT | O_TRUNC, 0644)
-            || handle_redirection(argv, i, ">>", STDOUT_FILENO,
-                                  O_WRONLY | O_CREAT | O_APPEND, 0644)
-            || handle_redirection(argv, i, "<", STDIN_FILENO, O_RDONLY, 0)
-            || handle_redirection(argv, i, "2>", STDERR_FILENO,
-                                  O_WRONLY | O_CREAT | O_TRUNC, 0644)
-            || handle_redirection(argv, i, "<>", STDIN_FILENO, O_RDWR | O_CREAT,
-                                  0644)
+        if (handle_redirection(argv, i, (redirection_t){">", STDOUT_FILENO, O_WRONLY | O_CREAT | O_TRUNC, 0644}, 0)
+            || handle_redirection(argv, i, (redirection_t){">>", STDOUT_FILENO, O_WRONLY | O_CREAT, 0644}, 1)
+            || handle_redirection(argv, i, (redirection_t){"<", STDIN_FILENO, O_RDONLY, 0}, 0)
+            || handle_redirection(argv, i, (redirection_t){"2>", STDERR_FILENO, O_WRONLY | O_CREAT | O_TRUNC, 0644}, 0)
+            || handle_redirection(argv, i, (redirection_t){"<>", STDIN_FILENO, O_RDWR | O_CREAT, 0644}, 0)
             || handle_fd_redirection(argv, i, "<&", STDIN_FILENO)
             || handle_fd_redirection(argv, i, ">&", STDOUT_FILENO))
         {
@@ -144,7 +142,6 @@ int execute_command(int argc, char **argv)
         }
     }
 
-    // Nettoyage des arguments restants
     int j = 0;
     for (int i = 0; i < argc; i++)
     {
@@ -158,7 +155,7 @@ int execute_command(int argc, char **argv)
     int builtin_status = execute_builtin(j, argv);
     if (builtin_status != -1)
     {
-        restore_fds(); // Restaure les FDs après un builtin
+        restore_fds();
         return builtin_status;
     }
 
@@ -175,7 +172,7 @@ int execute_command(int argc, char **argv)
     {
         int status;
         waitpid(pid, &status, 0);
-        restore_fds(); // Restaure les FDs après un processus enfant
+        restore_fds();
         if (WIFEXITED(status))
         {
             return WEXITSTATUS(status);
@@ -212,5 +209,5 @@ int execute_builtin(int argc, char **argv)
     {
         return builtin_exit(argc, argv);
     }
-    return -1; // Indique que ce n'est pas un builtin.
+    return -1;
 }
