@@ -29,14 +29,17 @@ int builtin_echo(int argc, char **argv)
             }
             else
             {
-                is_option = 0;
+                is_option =
+                    0; // Non reconnu, sortir et considérer comme argument
                 break;
             }
         }
         if (!is_option)
-            break;
+            break; // Traiter comme argument normal
         i++;
     }
+
+    // Affichage des arguments restants
     for (int j = i; j < argc; j++)
     {
         if (j > i)
@@ -74,9 +77,12 @@ int builtin_echo(int argc, char **argv)
         }
         else
         {
+            // Affichage brut (mode -E ou par défaut)
             printf("%s", argv[j]);
         }
     }
+
+    // Ajouter un saut de ligne si -n n'est pas activé
     if (!flag_n)
     {
         printf("\n");

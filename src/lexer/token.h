@@ -30,7 +30,8 @@ enum token_type
     TOKEN_ASSIGNMENT,
     TOKEN_WHILE,
     TOKEN_DO,
-    TOKEN_DONE,
+    TOKEN_UNTIL,
+    TOKEN_DONE
 };
 
 struct token

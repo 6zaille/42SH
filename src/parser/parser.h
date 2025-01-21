@@ -4,6 +4,7 @@
 #include "../lexer/lexer.h"
 #include "../lexer/token.h"
 
+
 enum ast_type
 {
     AST_COMMAND,

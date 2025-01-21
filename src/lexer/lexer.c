@@ -41,7 +41,7 @@ static struct token *handle_assignment(struct lexer *lexer)
     char *name = malloc(strlen(lexer->input) + 1);
     size_t name_index = 0;
 
-    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_')
+    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_' || lexer->input[lexer->pos] == '$' || lexer->input[lexer->pos] == '{' || lexer->input[lexer->pos] == '}' || lexer->input[lexer->pos] == '@' || lexer->input[lexer->pos] == '*')
     {
         name[name_index++] = lexer->input[lexer->pos++];
     }
@@ -80,7 +80,9 @@ static struct token *handle_variable_substitution(struct lexer *lexer)
     char *buffer = malloc(strlen(lexer->input) + 1);
     size_t buf_index = 0;
 
-    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_')
+    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_' || lexer->input[lexer->pos] == '$' 
+    || lexer->input[lexer->pos] == '{' || lexer->input[lexer->pos] == '}' || lexer->input[lexer->pos] == '@' 
+    || lexer->input[lexer->pos] == '*' || lexer->input[lexer->pos] == '?' || lexer->input[lexer->pos] == '#')  
     {
         buffer[buf_index++] = lexer->input[lexer->pos++];
     }
@@ -107,11 +109,19 @@ enum token_type check_keyword(const char *word)
         return TOKEN_FI;
     if (strcmp(word, "while") == 0)
         return TOKEN_WHILE;
+<<<<<<< HEAD
+=======
+    if (strcmp(word, "until") == 0)
+        return TOKEN_UNTIL;
+>>>>>>> dc5ee40918bbf37ae59d40c926a21c90e5219ffa
     if (strcmp(word, "do") == 0)
         return TOKEN_DO;
     if (strcmp(word, "done") == 0)
         return TOKEN_DONE;
+<<<<<<< HEAD
 
+=======
+>>>>>>> dc5ee40918bbf37ae59d40c926a21c90e5219ffa
     return TOKEN_WORD;
 }
 

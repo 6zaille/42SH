@@ -10,6 +10,10 @@
 #include "parser/ast.h"
 #include "parser/parser.h"
 #include "utils/utils.h"
+
+char *args[256];
+size_t args_count = 0;
+
 /*
 const char *token_type_to_string(enum token_type type)
 {
@@ -179,18 +183,146 @@ int handle_file_input(const char *filename, char **buffer)
     return 0;
 }
 
+void init_args(int argc,char **argv)
+{
+    args_count = argc - 2;
+    for (size_t i = 2; i < (size_t)argc; i++)
+    {
+        args[i-2] = argv[i];
+    }
+}
+
+void init_variables(int argc,char **argv)
+{
+    set_variable("0", argv[1]);
+    for (size_t i = 1; i < (size_t)argc - 1; i++)
+    {
+        char var_name[30];
+        snprintf(var_name, 30, "%zu", i);
+        set_variable(var_name, argv[i+1]);
+    }
+}
+
+int handle_stdin_mode(void)
+{
+    char *buffer = NULL;
+    size_t buffer_size = 0;
+    char *accumulated_input = calloc(1, sizeof(char));
+    if (!accumulated_input)
+    {
+        perror("calloc");
+        return 1;
+    }
+
+    while (1)
+    {
+        printf("42sh> ");
+        fflush(stdout);
+
+        ssize_t line_length = getline(&buffer, &buffer_size, stdin);
+
+        if (line_length == -1)
+        {
+            if (feof(stdin))
+                break;
+            perror("getline");
+            continue;
+        }
+
+        if (line_length == 1 && buffer[0] == '\n')
+            continue;
+
+        size_t new_length = strlen(accumulated_input) + line_length + 1;
+        char *new_accumulated = realloc(accumulated_input, new_length);
+        if (!new_accumulated)
+        {
+            perror("realloc");
+            free(accumulated_input);
+            free(buffer);
+            return 1;
+        }
+        accumulated_input = new_accumulated;
+        strcat(accumulated_input, buffer);
+
+        char *temp_input = strdup(accumulated_input);
+        if (!temp_input)
+        {
+            perror("strdup");
+            free(accumulated_input);
+            free(buffer);
+            return 1;
+        }
+
+        struct lexer *lexer = lexer_init(temp_input);
+        if (!lexer)
+        {
+            fprintf(stderr, "Erreur d'initialisation du lexer\n");
+            free(temp_input);
+            free(buffer);
+            free(accumulated_input);
+            return 1;
+        }
+
+        struct ast *ast = parser_parse(lexer);
+
+        if (ast)
+        {
+            ast_eval(ast);
+            ast_free(ast);
+
+            free(accumulated_input);
+            accumulated_input = calloc(1, sizeof(char));
+            if (!accumulated_input)
+            {
+                perror("calloc");
+                free(buffer);
+                lexer_destroy(lexer);
+                free(temp_input);
+                return 1;
+            }
+        }
+        else
+        {
+            //printf("42sh> ");
+            fflush(stdout);
+        }
+        lexer_destroy(lexer);
+        
+        //lexer->input = NULL;
+        
+        //free(lexer);
+        free(temp_input);
+    }
+
+    free(buffer);
+    free(accumulated_input);
+
+    return 0;
+}
+
+
+
 int main(int argc, char **argv)
 {
     char *buffer = NULL;
     int result = 0;
     init_shell();
+    init_args(argc,argv);
+    init_variables(argc,argv);
 
-    if (argc > 1 && strcmp(argv[1], "-c") == 0)
+    if (argc == 1)
     {
+        return handle_stdin_mode();
+    }
+    
+    else if (argc > 1 && strcmp(argv[1], "-c") == 0)
+    {
+        init_shell();
         result = handle_command_line_argument(argc, argv, &buffer);
     }
     else if (argc > 1)
     {
+        init_shell();
         result = handle_file_input(argv[1], &buffer);
     }
     else

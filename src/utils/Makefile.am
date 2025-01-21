@@ -1,7 +1,7 @@
 lib_LIBRARIES = libutils.a
 
 
-libutils_a_SOURCES = utils.c utils.h pwd.h oldpwd.h variables.h variables_count.h
+libutils_a_SOURCES = utils.c utils.h pwd.h oldpwd.h variables.h variables_count.h args.h args_count.h
 
 libutils_a_CFLAGS = -std=c99 -Werror -Wall -Wextra -Wvla -pedantic
 

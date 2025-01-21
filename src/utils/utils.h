@@ -9,6 +9,8 @@
 #include "pwd.h"
 #include "variables.h"
 #include "variables_count.h"
+#include "args.h"
+#include "args_count.h"
 
 void set_verbose_mode(int enabled);
 void verbose_log(const char *message);
