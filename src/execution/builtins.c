@@ -4,16 +4,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+static int flag_e = 0;
+static int flag_n = 0;
+static int i = 1;
+static int is_option = 1;
+
+
+
 int builtin_echo(int argc, char **argv)
 {
-    int flag_e = 0;
-    int flag_n = 0;
-    int i = 1;
-
-    // Analyse des options valides
     while (i < argc && argv[i][0] == '-' && argv[i][1] != '\0')
     {
-        int is_option = 1;
         for (size_t j = 1; argv[i][j]; j++)
         {
             if (argv[i][j] == 'e')
@@ -47,10 +48,8 @@ int builtin_echo(int argc, char **argv)
         {
             printf(" ");
         }
-
         if (flag_e == 1)
         {
-            // Interpréter les échappements
             for (char *p = argv[j]; *p; p++)
             {
                 if (*p == '\\')

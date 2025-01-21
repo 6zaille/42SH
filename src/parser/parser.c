@@ -48,7 +48,7 @@ static char **append_arg(char **args, const char *arg)
 static int is_special_token(enum token_type type)
 {
     return type == TOKEN_IF || type == TOKEN_THEN || type == TOKEN_ELSE
-        || type == TOKEN_ELIF || type == TOKEN_FI;
+        || type == TOKEN_ELIF || type == TOKEN_FI || type == TOKEN_DONE || type == TOKEN_WHILE || type == TOKEN_DO || type == TOKEN_UNTIL;
 }
 
 static void convert_token_to_word(struct token *tok)
