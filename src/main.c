@@ -305,16 +305,11 @@ int main(int argc, char **argv)
 {
     char *buffer = NULL;
     int result = 0;
-    init_shell();
-    init_args(argc,argv);
-    init_variables(argc,argv);
-
     if (argc == 1)
     {
         return handle_stdin_mode();
     }
-    
-    else if (argc > 1 && strcmp(argv[1], "-c") == 0)
+    if (argc > 1 && strcmp(argv[1], "-c") == 0)
     {
         init_shell();
         result = handle_command_line_argument(argc, argv, &buffer);
@@ -322,6 +317,8 @@ int main(int argc, char **argv)
     else if (argc > 1)
     {
         init_shell();
+        init_args(argc,argv);
+        init_variables(argc,argv);
         result = handle_file_input(argv[1], &buffer);
     }
     else
