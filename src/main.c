@@ -10,6 +10,10 @@
 #include "parser/ast.h"
 #include "parser/parser.h"
 #include "utils/utils.h"
+
+char *args[256];
+size_t args_count = 0;
+
 /*
 const char *token_type_to_string(enum token_type type)
 {
@@ -178,11 +182,33 @@ int handle_file_input(const char *filename, char **buffer)
     return 0;
 }
 
+void init_args(int argc,char **argv)
+{
+    args_count = argc - 2;
+    for (size_t i = 2; i < (size_t)argc; i++)
+    {
+        args[i-2] = argv[i];
+    }
+}
+
+void init_variables(int argc,char **argv)
+{
+    set_variable("0", argv[1]);
+    for (size_t i = 1; i < (size_t)argc - 1; i++)
+    {
+        char var_name[30];
+        snprintf(var_name, 30, "%zu", i);
+        set_variable(var_name, argv[i+1]);
+    }
+}
+
 int main(int argc, char **argv)
 {
     char *buffer = NULL;
     int result = 0;
     init_shell();
+    init_args(argc,argv);
+    init_variables(argc,argv);
 
     if (argc > 1 && strcmp(argv[1], "-c") == 0)
     {
