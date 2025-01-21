@@ -165,22 +165,34 @@ void ast_eval(struct ast *node)
         }
         break;
     }
-    case AST_NEGATION: {
+    case AST_NEGATION:
+    {
         if (node->children_count != 1 || !node->children[0])
         {
             fprintf(stderr, "[ERROR] Invalid negation node.\n");
             last_exit_status = 1;
             return;
         }
-
-        // Évalue l'enfant du nœud de négation
         ast_eval(node->children[0]);
-
-        // Inverse le code de retour
         last_exit_status = (last_exit_status == 0) ? 1 : 0;
         break;
     }
-
+    case AST_AND_OR:
+    {
+        if (strcmp(node->data, "&&") == 0)
+        {
+            ast_eval(node->children[0]);
+            if (last_exit_status == 0)
+                ast_eval(node->children[1]);
+        }
+        else if (strcmp(node->data, "||") == 0)
+        {
+            ast_eval(node->children[0]);
+            if (last_exit_status != 0)
+                ast_eval(node->children[1]);
+        }
+        break;
+    }
     default:
         fprintf(stderr, "le type de noeud n'est pas correct %d\n", node->type);
         break;

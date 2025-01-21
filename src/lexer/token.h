@@ -31,7 +31,9 @@ enum token_type
     TOKEN_WHILE,
     TOKEN_DO,
     TOKEN_UNTIL,
-    TOKEN_DONE
+    TOKEN_DONE,
+    TOKEN_AND,
+    TOKEN_OR
 };
 
 struct token

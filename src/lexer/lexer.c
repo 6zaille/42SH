@@ -175,10 +175,23 @@ struct token *lexer_next_token(struct lexer *lexer)
 
     char c = lexer->input[lexer->pos];
 
+    if (c == '&' && lexer->input[lexer->pos + 1] == '&')
+    {
+        lexer->pos += 2;
+        return token_init(TOKEN_AND, strdup("&&"));
+    }
     if (c == '|')
     {
-        lexer->pos++;
-        return token_init(TOKEN_PIPE, strdup("|"));
+        if (lexer->input[lexer->pos + 1] == '|')
+        {
+            lexer->pos += 2;
+            return token_init(TOKEN_OR, strdup("||"));
+        }
+        else
+        {
+            lexer->pos++;
+            return token_init(TOKEN_PIPE, strdup("|"));
+        }  
     }
     else if (c == '\'')
     {

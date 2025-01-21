@@ -15,7 +15,7 @@ enum ast_type
     AST_NEGATION,
     AST_WHILE,
     AST_UNTIL,
-
+    AST_AND_OR
 };
 enum parser_status
 {
@@ -30,6 +30,7 @@ struct ast *parse_if_statement(struct lexer *lexer);
 struct ast *parse_pipeline(struct lexer *lexer);
 struct ast *parse_command_list(struct lexer *lexer);
 struct ast *parse_rule_while(enum parser_status *status, struct lexer *lexer);
+struct ast *parse_and_or(struct lexer *lexer);
 void ast_free(struct ast *node);
 
 #endif /* !PARSER_H */

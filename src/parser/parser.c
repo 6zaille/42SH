@@ -82,6 +82,7 @@ static struct redirection *parse_redirection(struct lexer *lexer)
     redir->filename = strdup(filename.value);
     return redir;
 }
+
 static struct ast *create_assignment_node(const char *value)
 {
     struct ast *assignment_node = ast_create(AST_SIMPLE_COMMAND);
@@ -210,6 +211,7 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     return cmd_node;
 }
 
+
 static struct ast *parse_change(struct lexer *lexer)
 {
     // printf("Parsing change...\n");
@@ -221,7 +223,7 @@ static struct ast *parse_change(struct lexer *lexer)
         struct ast *child = parse_change(lexer);
         if (!child)
         {
-            // printf("Failed to parse negation child\n");
+            fprintf(stderr, "Failed to parse negation child\n");
             return NULL;
         }
 
@@ -258,13 +260,9 @@ static int is_end_of_block(enum token_type type)
 
 struct ast *parse_command_list(struct lexer *lexer)
 {
-    // printf("Parsing command list...\n");
     struct ast *list_node = ast_create(AST_LIST);
     if (!list_node)
-    {
-        // printf("Failed to create AST_LIST node\n");
         return NULL;
-    }
 
     struct ast **commands = NULL;
     size_t count = 0;
@@ -272,20 +270,17 @@ struct ast *parse_command_list(struct lexer *lexer)
     while (1)
     {
         struct token tok = lexer_peek(lexer);
-        // printf("Token: Type=%d, Value=%s\n", tok.type,
-        // tok.value ? tok.value : "NULL");
 
+        // Vérifier si nous sommes à la fin d'un bloc
         if (is_end_of_block(tok.type))
         {
-            // printf("End of block detected: Type=%d, Value=%s\n", tok.type,
-            //  tok.value ? tok.value : "NULL");
             break;
         }
 
-        struct ast *command_node = parse_change(lexer);
+        // Appeler parse_and_or pour chaque commande
+        struct ast *command_node = parse_and_or(lexer);
         if (!command_node)
         {
-            // printf("Failed to parse command\n");
             ast_free(list_node);
             return NULL;
         }
@@ -293,7 +288,6 @@ struct ast *parse_command_list(struct lexer *lexer)
         commands = realloc(commands, sizeof(struct ast *) * (count + 1));
         if (!commands)
         {
-            // printf("Failed to allocate memory for commands\n");
             ast_free(command_node);
             ast_free(list_node);
             return NULL;
@@ -301,19 +295,19 @@ struct ast *parse_command_list(struct lexer *lexer)
 
         commands[count++] = command_node;
 
+        // Gérer les séparateurs comme ';' et '\n'
         tok = lexer_peek(lexer);
-        if (tok.type == TOKEN_SEMICOLON)
+        if (tok.type == TOKEN_SEMICOLON || tok.type == TOKEN_NEWLINE)
         {
             lexer_pop(lexer);
         }
-        else if (tok.type == TOKEN_EOF || tok.type == TOKEN_NEWLINE)
+        else if (tok.type == TOKEN_EOF)
         {
             break;
         }
         else
         {
-            // printf("Unexpected token: Type=%d, Value=%s\n", tok.type,
-            // tok.value ? tok.value : "NULL");
+            // Token inattendu
             ast_free(list_node);
             return NULL;
         }
@@ -321,7 +315,6 @@ struct ast *parse_command_list(struct lexer *lexer)
 
     list_node->children = commands;
     list_node->children_count = count;
-    // printf("Command list parsed successfully with %zu commands\n", count);
     return list_node;
 }
 
@@ -417,7 +410,10 @@ struct ast *parser_parse(struct lexer *lexer)
     {
         return parse_if_statement(lexer);
     }
-    return parse_command_list(lexer);
+    else
+    {
+        return parse_command_list(lexer);
+    }
 }
 
 void ast_free(struct ast *node)
@@ -512,4 +508,50 @@ struct ast *parse_pipeline(struct lexer *lexer)
     }
 
     return pipeline_node;
+}
+
+struct ast *parse_and_or(struct lexer *lexer)
+{
+    struct ast *left = parse_change(lexer); // Appel à parse_change
+    if (!left)
+        return NULL;
+
+    struct token tok = lexer_peek(lexer);
+    while (tok.type == TOKEN_AND || tok.type == TOKEN_OR)
+    {
+        lexer_pop(lexer);
+        struct ast *right = parse_change(lexer); // Appel à parse_change ici aussi
+        if (!right)
+        {
+            ast_free(left);
+            return NULL;
+        }
+
+        struct ast *and_or_node = ast_create(AST_AND_OR);
+        if (!and_or_node)
+        {
+            ast_free(left);
+            ast_free(right);
+            return NULL;
+        }
+
+        and_or_node->data = strdup(tok.type == TOKEN_AND ? "&&" : "||");
+        and_or_node->children = malloc(2 * sizeof(struct ast *));
+        if (!and_or_node->children)
+        {
+            ast_free(and_or_node);
+            ast_free(left);
+            ast_free(right);
+            return NULL;
+        }
+
+        and_or_node->children[0] = left;
+        and_or_node->children[1] = right;
+        and_or_node->children_count = 2;
+
+        left = and_or_node;
+        tok = lexer_peek(lexer);
+    }
+
+    return left;
 }
