@@ -4,7 +4,6 @@
 #include "../lexer/lexer.h"
 #include "../lexer/token.h"
 
-
 enum ast_type
 {
     AST_COMMAND,
@@ -17,7 +16,6 @@ enum ast_type
     AST_UNTIL,
 
 };
-
 
 struct ast *ast_create(enum ast_type type);
 struct ast *parser_parse(struct lexer *lexer);

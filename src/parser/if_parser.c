@@ -51,7 +51,7 @@ static struct ast *parse_if_condition(struct lexer *lexer)
 
         if (tok.type == TOKEN_EOF || tok.type == TOKEN_FI)
         {
-            //fprintf(stderr, "mauvais token fin dans if condition\n");
+            // fprintf(stderr, "mauvais token fin dans if condition\n");
             ast_free(condition);
             return NULL;
         }
@@ -59,7 +59,7 @@ static struct ast *parse_if_condition(struct lexer *lexer)
         struct ast *cmd = parse_command_list(lexer);
         if (!cmd)
         {
-            //fprintf(stderr, "mauvaise commande dans if condition\n");
+            // fprintf(stderr, "mauvaise commande dans if condition\n");
             ast_free(condition);
             return NULL;
         }
@@ -113,7 +113,7 @@ static struct ast *parse_then(struct lexer *lexer)
 
         if (tok.type == TOKEN_EOF)
         {
-            //fprintf(stderr, "probleme de fin dans parse_then\n");
+            // fprintf(stderr, "probleme de fin dans parse_then\n");
             ast_free(condition);
             return NULL;
         }
@@ -180,7 +180,7 @@ static struct ast *parse_else(struct lexer *lexer)
 
         if (tok.type == TOKEN_EOF)
         {
-            //fprintf(stderr, "probleme de fin dans else\n");
+            // fprintf(stderr, "probleme de fin dans else\n");
             ast_free(condition);
             return NULL;
         }

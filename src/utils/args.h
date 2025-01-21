@@ -1,5 +1,5 @@
-#ifndef     ARGS_H
-#define     ARGS_H
+#ifndef ARGS_H
+#define ARGS_H
 
 extern char *args[256];
 

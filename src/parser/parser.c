@@ -335,7 +335,8 @@ struct ast *parse_while(struct lexer *lexer)
     }
     lexer_pop(lexer);
 
-    struct ast *ast_loop = ast_create(tok.type == TOKEN_WHILE ? AST_WHILE : AST_UNTIL);
+    struct ast *ast_loop =
+        ast_create(tok.type == TOKEN_WHILE ? AST_WHILE : AST_UNTIL);
     if (!ast_loop)
     {
         return NULL; // Erreur : allocation échouée
@@ -389,7 +390,6 @@ struct ast *parse_while(struct lexer *lexer)
 
 struct ast *parser_parse(struct lexer *lexer)
 {
-
     struct token tok = lexer_peek(lexer);
 
     if (tok.type == TOKEN_WHILE || tok.type == TOKEN_UNTIL)

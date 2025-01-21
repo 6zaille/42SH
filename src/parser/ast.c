@@ -134,33 +134,36 @@ void ast_eval(struct ast *node)
     }
 
     case AST_UNTIL: {
-    struct ast *condition = node->children[0];
-    struct ast *body = node->children[1];
+        struct ast *condition = node->children[0];
+        struct ast *body = node->children[1];
 
-    //printf("Evaluating until loop...\n");
+        // printf("Evaluating until loop...\n");
 
-    while (1) {
-        // Évalue la condition
-        ast_eval(condition);
+        while (1)
+        {
+            // Évalue la condition
+            ast_eval(condition);
 
-        // Si la condition devient vraie, sort de la boucle
-        if (last_exit_status == 0) {
-            //printf("Until loop condition met, exiting loop...\n");
-            break;
+            // Si la condition devient vraie, sort de la boucle
+            if (last_exit_status == 0)
+            {
+                // printf("Until loop condition met, exiting loop...\n");
+                break;
+            }
+
+            // Évalue le corps de la boucle
+            ast_eval(body);
+
+            // Si une commande `break` a été exécutée, sortir de la boucle
+            if (loop_running == 0)
+            {
+                // printf("Until loop interrupted by break...\n");
+                loop_running = 1; // Réinitialise pour les prochaines boucles
+                break;
+            }
         }
-
-        // Évalue le corps de la boucle
-        ast_eval(body);
-
-        // Si une commande `break` a été exécutée, sortir de la boucle
-        if (loop_running == 0) {
-            //printf("Until loop interrupted by break...\n");
-            loop_running = 1; // Réinitialise pour les prochaines boucles
-            break;
-        }
+        break;
     }
-    break;
-}
 
     case AST_IF: {
         struct ast_if_data *data = (struct ast_if_data *)node->data;
