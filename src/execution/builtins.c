@@ -6,52 +6,24 @@
 
 static int flag_e = 0;
 static int flag_n = 0;
+static int i = 1;
+static int is_option = 1;
 
-static void print_with_escape(char *str)
-{
-    for (char *p = str; *p; p++)
-    {
-        if (*p == '\\')
-        {
-            p++;
-            switch (*p)
-            {
-            case 'n':
-                putchar('\n');
-                break;
-            case 't':
-                putchar('\t');
-                break;
-            case '\\':
-                putchar('\\');
-                break;
-            default:
-                putchar(*p);
-                break;
-            }
-        }
-        else
-        {
-            putchar(*p);
-        }
-    }
-}
+
 
 int builtin_echo(int argc, char **argv)
 {
-    int i = 1;
     while (i < argc && argv[i][0] == '-' && argv[i][1] != '\0')
     {
-        int is_option = 1;
         for (size_t j = 1; argv[i][j]; j++)
         {
             if (argv[i][j] == 'e')
             {
-                flag_e = 1;
+                flag_e = 0;
             }
             else if (argv[i][j] == 'E')
             {
-                flag_e = 0;
+                flag_e = 1;
             }
             else if (argv[i][j] == 'n')
             {
@@ -73,10 +45,34 @@ int builtin_echo(int argc, char **argv)
         {
             printf(" ");
         }
-
-        if (flag_e)
+        if (flag_e == 1)
         {
-            print_with_escape(argv[j]);
+            for (char *p = argv[j]; *p; p++)
+            {
+                if (*p == '\\')
+                {
+                    p++;
+                    switch (*p)
+                    {
+                    case 'n':
+                        putchar('n');
+                        break;
+                    case 't':
+                        putchar('t');
+                        break;
+                    case '\\':
+                        putchar('\\');
+                        break;
+                    default:
+                        putchar(*p);
+                        break;
+                    }
+                }
+                else
+                {
+                    putchar(*p);
+                }
+            }
         }
         else
         {
