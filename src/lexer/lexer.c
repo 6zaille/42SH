@@ -41,7 +41,10 @@ static struct token *handle_assignment(struct lexer *lexer)
     char *name = malloc(strlen(lexer->input) + 1);
     size_t name_index = 0;
 
-    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_' || lexer->input[lexer->pos] == '$' || lexer->input[lexer->pos] == '{' || lexer->input[lexer->pos] == '}' || lexer->input[lexer->pos] == '@' || lexer->input[lexer->pos] == '*')
+    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_'
+           || lexer->input[lexer->pos] == '$' || lexer->input[lexer->pos] == '{'
+           || lexer->input[lexer->pos] == '}' || lexer->input[lexer->pos] == '@'
+           || lexer->input[lexer->pos] == '*')
     {
         name[name_index++] = lexer->input[lexer->pos++];
     }
@@ -80,9 +83,11 @@ static struct token *handle_variable_substitution(struct lexer *lexer)
     char *buffer = malloc(strlen(lexer->input) + 1);
     size_t buf_index = 0;
 
-    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_' || lexer->input[lexer->pos] == '$' 
-    || lexer->input[lexer->pos] == '{' || lexer->input[lexer->pos] == '}' || lexer->input[lexer->pos] == '@' 
-    || lexer->input[lexer->pos] == '*' || lexer->input[lexer->pos] == '?' || lexer->input[lexer->pos] == '#')  
+    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_'
+           || lexer->input[lexer->pos] == '$' || lexer->input[lexer->pos] == '{'
+           || lexer->input[lexer->pos] == '}' || lexer->input[lexer->pos] == '@'
+           || lexer->input[lexer->pos] == '*' || lexer->input[lexer->pos] == '?'
+           || lexer->input[lexer->pos] == '#')
     {
         buffer[buf_index++] = lexer->input[lexer->pos++];
     }

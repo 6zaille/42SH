@@ -27,7 +27,6 @@ void pretty_print_ast(struct ast *node, int depth)
 
 int main(int argc, char **argv)
 {
-    
     if (argc != 2)
     {
         fprintf(stderr, "Usage: %s \"command\"\n", argv[0]);

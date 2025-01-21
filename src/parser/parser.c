@@ -140,6 +140,10 @@ static int add_argument_or_redirection(struct ast_command_data *data,
     }
     else if (tok.type == TOKEN_WORD)
     {
+        if (strcmp(tok.value,"")==0)
+        {
+            return 0;
+        }
         data->args = append_arg(data->args, tok.value);
     }
     else
@@ -318,93 +322,76 @@ struct ast *parse_command_list(struct lexer *lexer)
     return list_node;
 }
 
-struct ast *parse_rule_while(enum parser_status *status, struct lexer *lexer)
+struct ast *parse_while(struct lexer *lexer)
 {
-    // printf("Parsing while loop...\n");
     struct token tok = lexer_peek(lexer);
 
-    if (tok.type != TOKEN_WHILE)
+    if (tok.type != TOKEN_WHILE && tok.type != TOKEN_UNTIL)
     {
-        // printf("Expected TOKEN_WHILE, got %d\n", tok.type);
-        *status = PARSER_UNEXPECTED_TOKEN;
-        return NULL;
+        return NULL; // Erreur : pas un TOKEN_WHILE ou TOKEN_UNTIL
     }
     lexer_pop(lexer);
 
-    struct ast *ast_while = ast_create(AST_WHILE);
-    if (!ast_while)
+    struct ast *ast_loop =
+        ast_create(tok.type == TOKEN_WHILE ? AST_WHILE : AST_UNTIL);
+    if (!ast_loop)
     {
-        // printf("Failed to create AST_WHILE node\n");
-        *status = PARSER_ERROR;
-        return NULL;
+        return NULL; // Erreur : allocation échouée
     }
 
-    // Analyse condition
-    // printf("Parsing condition...\n");
-    ast_while->children = malloc(2 * sizeof(struct ast *));
-    if (!ast_while->children)
+    // Allocation des enfants pour condition et corps
+    ast_loop->children = malloc(2 * sizeof(struct ast *));
+    if (!ast_loop->children)
     {
-        // printf("Failed to allocate children\n");
-        ast_free(ast_while);
-        *status = PARSER_ERROR;
-        return NULL;
+        ast_free(ast_loop);
+        return NULL; // Erreur : allocation échouée
     }
-    ast_while->children_count = 2;
+    ast_loop->children_count = 2;
 
-    ast_while->children[0] = parse_command_list(lexer);
-    if (!ast_while->children[0])
+    // Analyse de la condition
+    ast_loop->children[0] = parse_command_list(lexer);
+    if (!ast_loop->children[0])
     {
-        // printf("Failed to parse condition\n");
-        ast_free(ast_while);
-        *status = PARSER_ERROR;
-        return NULL;
+        ast_free(ast_loop);
+        return NULL; // Erreur : échec du parsing de la condition
     }
 
+    // Vérifie le token 'do'
     tok = lexer_peek(lexer);
     if (tok.type != TOKEN_DO)
     {
-        // printf("Expected TOKEN_DO, got %d\n", tok.type);
-        ast_free(ast_while);
-        *status = PARSER_UNEXPECTED_TOKEN;
-        return NULL;
+        ast_free(ast_loop);
+        return NULL; // Erreur : 'do' attendu
     }
     lexer_pop(lexer);
 
-    // Analyse corps
-    // printf("Parsing body...\n");
-    ast_while->children[1] = parse_command_list(lexer);
-    if (!ast_while->children[1])
+    // Analyse du corps
+    ast_loop->children[1] = parse_command_list(lexer);
+    if (!ast_loop->children[1])
     {
-        // printf("Failed to parse body\n");
-        ast_free(ast_while);
-        *status = PARSER_ERROR;
-        return NULL;
+        ast_free(ast_loop);
+        return NULL; // Erreur : échec du parsing du corps
     }
 
+    // Vérifie le token 'done'
     tok = lexer_peek(lexer);
     if (tok.type != TOKEN_DONE)
     {
-        // printf("Expected TOKEN_DONE, got %d\n", tok.type);
-        ast_free(ast_while);
-        *status = PARSER_UNEXPECTED_TOKEN;
-        return NULL;
+        ast_free(ast_loop);
+        return NULL; // Erreur : 'done' attendu
     }
     lexer_pop(lexer);
 
-    // printf("While loop parsed successfully\n");
-    *status = PARSER_OK;
-    return ast_while;
+    return ast_loop; // Succès
 }
 
 struct ast *parser_parse(struct lexer *lexer)
 {
-    enum parser_status status = PARSER_OK;
-
     struct token tok = lexer_peek(lexer);
 
-    if (tok.type == TOKEN_WHILE)
+    if (tok.type == TOKEN_WHILE || tok.type == TOKEN_UNTIL)
     {
-        return parse_rule_while(&status, lexer);
+        return parse_while(lexer);
     }
     else if (tok.type == TOKEN_IF)
     {

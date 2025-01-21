@@ -16,7 +16,6 @@ static int last_exit_status = 0;
 char *pwd = NULL;
 char *oldpwd = NULL;
 
-
 void set_verbose_mode(int enabled)
 {
     verbose_mode = enabled;
@@ -98,6 +97,10 @@ const char *get_variable(const char *name)
     }
     else if (strcmp(name, "@") == 0 || strcmp(name, "*") == 0)
     {
+        if (args_count == 0)
+        {
+            return NULL;
+        }
         size_t pos = 0;
         for (size_t i = 0; i < args_count; i++)
         {
