@@ -27,6 +27,10 @@ enum token_type
     TOKEN_NEGATION,
     TOKEN_VARIABLE,
     TOKEN_ASSIGNMENT,
+    TOKEN_WHILE,
+    TOKEN_DO,
+    TOKEN_UNTIL,
+    TOKEN_DONE
 };
 
 struct token

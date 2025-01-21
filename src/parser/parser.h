@@ -11,7 +11,9 @@ enum ast_type
     AST_LIST,
     AST_IF,
     AST_PIPELINE,
-    AST_NEGATION
+    AST_NEGATION,
+    AST_WHILE,
+    AST_UNTIL
 };
 
 struct ast *ast_create(enum ast_type type);
