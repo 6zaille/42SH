@@ -41,7 +41,7 @@ static struct token *handle_assignment(struct lexer *lexer)
     char *name = malloc(strlen(lexer->input) + 1);
     size_t name_index = 0;
 
-    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_')
+    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_' || lexer->input[lexer->pos] == '$' || lexer->input[lexer->pos] == '{' || lexer->input[lexer->pos] == '}' || lexer->input[lexer->pos] == '@' || lexer->input[lexer->pos] == '*')
     {
         name[name_index++] = lexer->input[lexer->pos++];
     }
