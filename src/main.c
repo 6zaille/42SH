@@ -183,23 +183,23 @@ int handle_file_input(const char *filename, char **buffer)
     return 0;
 }
 
-void init_args(int argc,char **argv)
+void init_args(int argc, char **argv)
 {
     args_count = argc - 2;
     for (size_t i = 2; i < (size_t)argc; i++)
     {
-        args[i-2] = argv[i];
+        args[i - 2] = argv[i];
     }
 }
 
-void init_variables(int argc,char **argv)
+void init_variables(int argc, char **argv)
 {
     set_variable("0", argv[1]);
     for (size_t i = 1; i < (size_t)argc - 1; i++)
     {
         char var_name[30];
         snprintf(var_name, 30, "%zu", i);
-        set_variable(var_name, argv[i+1]);
+        set_variable(var_name, argv[i + 1]);
     }
 }
 
@@ -283,14 +283,14 @@ int handle_stdin_mode(void)
         }
         else
         {
-            //printf("42sh> ");
+            // printf("42sh> ");
             fflush(stdout);
         }
         lexer_destroy(lexer);
-        
-        //lexer->input = NULL;
-        
-        //free(lexer);
+
+        // lexer->input = NULL;
+
+        // free(lexer);
         free(temp_input);
     }
 
@@ -300,22 +300,19 @@ int handle_stdin_mode(void)
     return 0;
 }
 
-
-
 int main(int argc, char **argv)
 {
     char *buffer = NULL;
     int result = 0;
-    init_shell();
-    init_args(argc,argv);
-    init_variables(argc,argv);
 
     if (argc == 1)
     {
         return handle_stdin_mode();
     }
-    
-    else if (argc > 1 && strcmp(argv[1], "-c") == 0)
+    init_args(argc, argv);
+    init_variables(argc, argv);
+
+    if (argc > 1 && strcmp(argv[1], "-c") == 0)
     {
         init_shell();
         result = handle_command_line_argument(argc, argv, &buffer);
