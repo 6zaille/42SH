@@ -1,20 +1,25 @@
-#!/bin/sh
+#!/bin/bash
 
 printf "Testsuite 42SH is cooking\n"
 printf "=====================================\n"
+
+# Variables globales
 STATUS=0
 TOTAL_TESTS=0
 PASSED_TESTS=0
 FAILED_TESTS=0
-BIN_PATH="./src/42sh"
-
-if [ ! -f "$BIN_PATH" ]; then
-    printf "chef il manque le binary 42sh %s\n" "$BIN_PATH"
-    exit 1
-fi
-
 FAILED_TEST_NAMES=""
 
+# Vérifications initiales
+if [ -z "$BIN_PATH" ]; then
+    BIN_PATH="$(pwd)/src/42sh"
+fi
+
+if [ -z "$OUTPUT_FILE" ]; then
+    OUTPUT_FILE="$(pwd)/out"
+fi
+
+# Fonction pour exécuter un test
 run_test() {
     TEST_NAME=$1
     COMMAND=$2
@@ -22,7 +27,7 @@ run_test() {
     CHECK_CMD=$4
 
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
-    OUTPUT=$(eval "$COMMAND" 2>&1)
+    OUTPUT=$(timeout 5s sh -c "$COMMAND" 2>&1)
     ACTUAL_EXIT_CODE=$?
 
     if [ $ACTUAL_EXIT_CODE -eq $EXPECTED_EXIT_CODE ] && eval "$CHECK_CMD"; then
@@ -38,11 +43,7 @@ run_test() {
     fi
 
     RESET="\033[0m"
-    if [ $TOTAL_TESTS -gt 9 ]; then
-        printf "Test %d: %b%s%b\n" "$TOTAL_TESTS" "$COLOR" "$STATUS_MSG" "$RESET"
-    else
-        printf "Test %d:  %b%s%b\n" "$TOTAL_TESTS" "$COLOR" "$STATUS_MSG" "$RESET"
-    fi
+    printf "Test %d: %b%s%b\n" "$TOTAL_TESTS" "$COLOR" "$STATUS_MSG" "$RESET"
 }
 
 # Tests Echo Commands
@@ -340,10 +341,18 @@ run_test "Combined: Pipeline and redirection" \
     "$BIN_PATH -c 'echo Hello | tr H J > output.txt'; grep -qx \"Jello\" output.txt && rm output.txt" 0 \
     'true'
 
-# Final Report
-echo "====================================="
-PERCENT_PASSED=$((PASSED_TESTS * 100 / TOTAL_TESTS))
+# Mode couverture
+if [ "$COVERAGE" = "yes" ]; then
+    printf "Running in coverage mode...\n"
+    # Ajoutez ici l'appel à vos tests unitaires ou des outils de couverture comme gcov/lcov.
+fi
 
+# Calcul des résultats finaux
+PERCENT_PASSED=$((PASSED_TESTS * 100 / TOTAL_TESTS))
+echo $PERCENT_PASSED > "$OUTPUT_FILE"
+
+# Rapport final
+echo "====================================="
 if [ $PERCENT_PASSED -ge 90 ]; then
     COLOR="\033[32m" # Vert
 elif [ $PERCENT_PASSED -ge 50 ]; then
