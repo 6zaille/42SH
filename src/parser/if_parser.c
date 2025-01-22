@@ -9,6 +9,8 @@
 #include "ast.h"
 #include "parser.h"
 
+int status_error = 0;
+
 static struct ast *ast_create_if(struct ast *condition, struct ast *then_branch,
                                  struct ast *else_branch)
 {
@@ -100,8 +102,7 @@ static struct ast *parse_if_condition(struct lexer *lexer)
         }
         else if (tok.type != TOKEN_THEN && tok.type != TOKEN_IF)
         {
-            fprintf(stderr, "token anormal dans if'%s'\n",
-                    tok.value ? tok.value : "NULL");
+            status_error = 2;
             ast_free(condition);
             return NULL;
         }
@@ -193,6 +194,7 @@ static struct ast *parse_else(struct lexer *lexer)
         struct ast *cmd = parse_command_list(lexer);
         if (!cmd)
         {
+            status_error = 2;
             fprintf(stderr, "commande invalide dans parse_else\n");
             ast_free(condition);
             return NULL;
@@ -228,6 +230,7 @@ struct ast *parse_if_statement(struct lexer *lexer)
     struct token tok = lexer_peek(lexer);
     if (tok.type != TOKEN_IF)
     {
+        status_error = 2;
         fprintf(stderr, "Syntax error: expected 'if', got '%s'\n",
                 tok.value ? tok.value : "NULL");
         return NULL;
@@ -236,11 +239,14 @@ struct ast *parse_if_statement(struct lexer *lexer)
 
     struct ast *condition = parse_if_condition(lexer);
     if (!condition)
+    {
+        status_error = 2;
         return NULL;
-
+    }
     struct ast *then_branch = parse_then(lexer);
     if (!then_branch)
     {
+        status_error = 2;
         ast_free(condition);
         return NULL;
     }

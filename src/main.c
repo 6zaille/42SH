@@ -362,6 +362,10 @@ int main(int argc, char **argv)
         ast_eval(ast);
         ast_free(ast);
     }
+    if (status_error != 0)
+    {
+        return status_error;
+    }
     lexer_destroy(lexer);
     free(buffer);
     free(pwd);
