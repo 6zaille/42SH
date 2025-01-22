@@ -390,7 +390,7 @@ run_test "Variable: Special variable \$?" \
 run_test "Variable: Special variable \$\$" \
     "$BIN_PATH -c 'echo $$'" 0 \
     'bash --posix -c "echo $$" > /tmp/bash_output && echo "$OUTPUT" > /tmp/42sh_output && diff /tmp/bash_output /tmp/42sh_output'
-    rm output && rm /tmp/bash_output && rm /tmp/42sh_output
+   # rm output && rm /tmp/bash_output && rm /tmp/42sh_output
 # Tests Combined
 run_test "Combined: Pipeline and redirection" \
     "$BIN_PATH -c 'echo Hello | tr H J > output.txt'; grep -qx \"Jello\" output.txt && rm output.txt" 0 \
