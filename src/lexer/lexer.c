@@ -123,13 +123,13 @@ enum token_type check_keyword(const char *word)
 
     return TOKEN_WORD;
 }
-
+/*
 static int is_surrounded_by_letters(const char *input, size_t pos)
 {
     char prev = (pos > 0) ? input[pos - 1] : ' ';
     char next = input[pos + 1];
     return isalnum(prev) && isalnum(next);
-}
+}*/
 
 struct lexer *lexer_init(const char *input)
 {
@@ -145,6 +145,7 @@ struct lexer *lexer_init(const char *input)
     return lexer;
 }
 
+
 static struct token *handle_word_token(struct lexer *lexer)
 {
     char *buffer = malloc(strlen(lexer->input) + 1);
@@ -154,19 +155,82 @@ static struct token *handle_word_token(struct lexer *lexer)
            && lexer->input[lexer->pos] != ';'
            && lexer->input[lexer->pos] != '\n')
     {
-        if (lexer->input[lexer->pos] == '\''
-            && is_surrounded_by_letters(lexer->input, lexer->pos))
+        if (lexer->input[lexer->pos] == '\\') // Handle escape sequences
+        {
+            lexer->pos++; // Skip escape character
+            buffer[buf_index++] = lexer->input[lexer->pos++];
+        }
+        else if (lexer->input[lexer->pos] == '"') // Handle double quotes
+        {
+            lexer->pos++; // Skip opening quote
+            while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '"')
+            {
+                if (lexer->input[lexer->pos] == '\\' &&
+                    (lexer->input[lexer->pos + 1] == '$' || lexer->input[lexer->pos + 1] == '"'))
+                {
+                    lexer->pos++; // Skip escape character
+                }
+                else if (lexer->input[lexer->pos] == '$') // Handle variable substitution
+                {
+                    lexer->pos++;
+                    char var_name[256] = {0};
+                    size_t var_index = 0;
+
+                    // Extract the variable name
+                    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_')
+                    {
+                        var_name[var_index++] = lexer->input[lexer->pos++];
+                    }
+                    var_name[var_index] = '\0';
+
+                    // Fetch the variable value
+                    const char *value = get_variable(var_name);
+                    if (value)
+                    {
+                        strcpy(&buffer[buf_index], value);
+                        buf_index += strlen(value);
+                    }
+                }
+                else
+                {
+                    buffer[buf_index++] = lexer->input[lexer->pos++];
+                }
+            }
+            if (lexer->input[lexer->pos] == '"')
+            {
+                lexer->pos++; // Skip closing quote
+            }
+        }
+        else if (lexer->input[lexer->pos] == '$') // Handle variable substitution outside quotes
         {
             lexer->pos++;
-            continue;
+            char var_name[256] = {0};
+            size_t var_index = 0;
+
+            while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_')
+            {
+                var_name[var_index++] = lexer->input[lexer->pos++];
+            }
+            var_name[var_index] = '\0';
+
+            const char *value = get_variable(var_name);
+            if (value)
+            {
+                strcpy(&buffer[buf_index], value);
+                buf_index += strlen(value);
+            }
         }
-        buffer[buf_index++] = lexer->input[lexer->pos++];
+        else
+        {
+            buffer[buf_index++] = lexer->input[lexer->pos++];
+        }
     }
 
     buffer[buf_index] = '\0';
     enum token_type type = check_keyword(buffer);
     return token_init(type, buffer);
 }
+
 
 struct token *lexer_next_token(struct lexer *lexer)
 {
