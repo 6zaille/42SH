@@ -198,8 +198,7 @@ void ast_eval(struct ast *node)
         }
         break;
     }
-    case AST_NEGATION:
-    {
+    case AST_NEGATION: {
         if (node->children_count != 1 || !node->children[0])
         {
             fprintf(stderr, "[ERROR] Invalid negation node.\n");
@@ -210,8 +209,7 @@ void ast_eval(struct ast *node)
         last_exit_status = (last_exit_status == 0) ? 1 : 0;
         break;
     }
-    case AST_AND_OR:
-    {
+    case AST_AND_OR: {
         if (strcmp(node->data, "&&") == 0)
         {
             ast_eval(node->children[0]);

@@ -316,8 +316,8 @@ int main(int argc, char **argv)
     else if (argc > 1)
     {
         init_shell();
-        init_args(argc,argv);
-        init_variables(argc,argv);
+        init_args(argc, argv);
+        init_variables(argc, argv);
         result = handle_file_input(argv[1], &buffer);
     }
     else

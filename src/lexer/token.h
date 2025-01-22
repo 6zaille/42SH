@@ -33,7 +33,9 @@ enum token_type
     TOKEN_UNTIL,
     TOKEN_DONE,
     TOKEN_AND,
-    TOKEN_OR
+    TOKEN_OR,
+    TOKEN_IN,
+    TOKEN_FOR,
 };
 
 struct token

@@ -140,7 +140,7 @@ static int add_argument_or_redirection(struct ast_command_data *data,
     }
     else if (tok.type == TOKEN_WORD)
     {
-        if (strcmp(tok.value,"")==0)
+        if (strcmp(tok.value, "") == 0)
         {
             return 0;
         }
@@ -214,7 +214,6 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     cmd_node->data = data;
     return cmd_node;
 }
-
 
 static struct ast *parse_change(struct lexer *lexer)
 {
@@ -507,7 +506,8 @@ struct ast *parse_and_or(struct lexer *lexer)
     while (tok.type == TOKEN_AND || tok.type == TOKEN_OR)
     {
         lexer_pop(lexer);
-        struct ast *right = parse_change(lexer); // Appel à parse_change ici aussi
+        struct ast *right =
+            parse_change(lexer); // Appel à parse_change ici aussi
         if (!right)
         {
             ast_free(left);

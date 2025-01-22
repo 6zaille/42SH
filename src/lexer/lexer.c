@@ -196,7 +196,7 @@ struct token *lexer_next_token(struct lexer *lexer)
         {
             lexer->pos++;
             return token_init(TOKEN_PIPE, strdup("|"));
-        }  
+        }
     }
     else if (c == '\'')
     {
