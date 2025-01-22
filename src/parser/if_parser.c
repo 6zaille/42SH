@@ -59,8 +59,9 @@ static struct ast *parse_if_condition(struct lexer *lexer)
                 return NULL;
             }
 
-            condition->children = realloc(condition->children,
-                                          sizeof(struct ast *) * (condition->children_count + 1));
+            condition->children =
+                realloc(condition->children,
+                        sizeof(struct ast *) * (condition->children_count + 1));
             if (!condition->children)
             {
                 perror("realloc");
@@ -125,7 +126,6 @@ static struct ast *parse_then(struct lexer *lexer)
         if (tok.type == TOKEN_ELSE || tok.type == TOKEN_FI
             || tok.type == TOKEN_ELIF)
         {
-            
             break;
         }
 
@@ -163,7 +163,6 @@ static struct ast *parse_then(struct lexer *lexer)
         {
             break;
         }
-        
     }
 
     return condition;
@@ -221,7 +220,6 @@ static struct ast *parse_else(struct lexer *lexer)
         {
             break;
         }
-        
     }
 
     return condition;
