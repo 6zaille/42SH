@@ -22,11 +22,8 @@ void ast_eval(struct ast *node)
         }
         const char *cmd = data->args[0];
 
-        // Gestion de 'break'
         if (strcmp(cmd, "break") == 0)
         {
-            // Met fin à la boucle en définissant une variable globale ou un
-            // drapeau
             loop_running =
                 0; // Définir `loop_running` comme une variable globale
             last_exit_status = 0; // Indiquer un succès
@@ -141,20 +138,17 @@ void ast_eval(struct ast *node)
 
         while (1)
         {
-            // Évalue la condition
             ast_eval(condition);
 
-            // Si la condition devient vraie, sort de la boucle
+
             if (last_exit_status == 0)
             {
                 // printf("Until loop condition met, exiting loop...\n");
                 break;
             }
 
-            // Évalue le corps de la boucle
             ast_eval(body);
 
-            // Si une commande `break` a été exécutée, sortir de la boucle
             if (loop_running == 0)
             {
                 // printf("Until loop interrupted by break...\n");
@@ -235,11 +229,9 @@ void ast_pretty_print(struct ast *node, int depth)
     if (!node)
         return;
 
-    // Affiche l'indentation
     for (int i = 0; i < depth; i++)
         printf(i == depth - 1 ? "|---" : "|   ");
 
-    // Gère les différents types de nœuds
     switch (node->type)
     {
     case AST_LIST:
@@ -254,14 +246,12 @@ void ast_pretty_print(struct ast *node, int depth)
             return;
         }
 
-        // Calcule le nombre d'arguments
         size_t argc = 0;
         while (data->args[argc] != NULL)
         {
             argc++;
         }
 
-        // Exécute la commande
         last_exit_status = execute_command((int)argc, data->args);
         break;
     }
@@ -278,7 +268,6 @@ void ast_pretty_print(struct ast *node, int depth)
     case AST_IF: {
         printf("IF\n");
 
-        // Affiche la condition
         printf("|   Condition:\n");
         struct ast_if_data *if_data = (struct ast_if_data *)node->data;
         if (if_data && if_data->condition)
@@ -290,7 +279,7 @@ void ast_pretty_print(struct ast *node, int depth)
             printf("|   |---(NULL)\n");
         }
 
-        // Affiche le bloc then
+
         printf("|   Then:\n");
         if (if_data && if_data->then_branch)
         {
@@ -301,12 +290,10 @@ void ast_pretty_print(struct ast *node, int depth)
             printf("|   |---(NULL)\n");
         }
 
-        // Affiche le bloc else ou elif
         if (if_data && if_data->else_branch)
         {
             struct ast *else_branch = if_data->else_branch;
 
-            // Vérifie si c'est un bloc elif
             if (else_branch->type == AST_IF)
             {
                 printf("|   Elif:\n");
@@ -326,7 +313,6 @@ void ast_pretty_print(struct ast *node, int depth)
         break;
     }
 
-    // Parcours les enfants restants
     for (size_t i = 0; i < node->children_count; i++)
     {
         ast_pretty_print(node->children[i], depth + 1);
