@@ -5,6 +5,43 @@
 int last_exit_status = 0;
 int loop_running = 1;
 
+
+
+void ast_eval_for(struct ast *node) {
+    if (!node || node->type != AST_FOR || node->children_count < 2) {
+        fprintf(stderr, "AST_FOR: Invalid node structure\n");
+        last_exit_status = 1;
+        return;
+    }
+
+    // Récupération des parties du nœud AST_FOR
+    char *variable_name = (char *)node->data;
+    struct ast *values = node->children[0]; // Les valeurs de la boucle
+    struct ast *body = node->children[1];   // Le corps de la boucle
+
+    // Parcourir les valeurs
+    for (size_t i = 0; i < values->children_count; i++) {
+        struct ast *value_node = values->children[i];
+        if (!value_node || !value_node->data) {
+            fprintf(stderr, "AST_FOR: Invalid value node\n");
+            continue;
+        }
+
+        // Affecter la valeur actuelle à la variable
+        set_variable(variable_name, (char *)value_node->data);
+
+        // Évaluer le corps de la boucle pour chaque itération
+        for (size_t j = 0; j < body->children_count; j++) {
+            ast_eval(body->children[j]);
+        }
+
+        // Interruption de la boucle si nécessaire
+        if (loop_running == 0) {
+            break;
+        }
+    }
+}
+
 void ast_eval(struct ast *node)
 {
     if (!node)
@@ -198,32 +235,37 @@ void ast_eval(struct ast *node)
         }
         break;
     }
-    case AST_NEGATION: {
-        if (node->children_count != 1 || !node->children[0])
-        {
-            fprintf(stderr, "[ERROR] Invalid negation node.\n");
-            last_exit_status = 1;
-            return;
-        }
-        ast_eval(node->children[0]);
-        last_exit_status = (last_exit_status == 0) ? 1 : 0;
-        break;
-    }
-    case AST_AND_OR: {
-        if (strcmp(node->data, "&&") == 0)
-        {
+    case AST_NEGATION: 
+    {
+            if (node->children_count != 1 || !node->children[0])
+            {
+                fprintf(stderr, "[ERROR] Invalid negation node.\n");
+                last_exit_status = 1;
+                return;
+            }
             ast_eval(node->children[0]);
-            if (last_exit_status == 0)
-                ast_eval(node->children[1]);
+            last_exit_status = (last_exit_status == 0) ? 1 : 0;
+            break;
         }
-        else if (strcmp(node->data, "||") == 0)
+        case AST_AND_OR: 
         {
-            ast_eval(node->children[0]);
-            if (last_exit_status != 0)
-                ast_eval(node->children[1]);
+            if (strcmp(node->data, "&&") == 0)
+            {
+                ast_eval(node->children[0]);
+                if (last_exit_status == 0)
+                    ast_eval(node->children[1]);
+            }
+            else if (strcmp(node->data, "||") == 0)
+            {
+                ast_eval(node->children[0]);
+                if (last_exit_status != 0)
+                    ast_eval(node->children[1]);
+            }
+            break;
         }
+    case AST_FOR: 
+        ast_eval_for(node);
         break;
-    }
     default:
         fprintf(stderr, "le type de noeud n'est pas correct %d\n", node->type);
         break;

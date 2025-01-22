@@ -14,7 +14,8 @@ enum ast_type
     AST_NEGATION,
     AST_WHILE,
     AST_UNTIL,
-    AST_AND_OR
+    AST_AND_OR,
+    AST_FOR
 };
 
 struct ast *ast_create(enum ast_type type);
@@ -24,6 +25,7 @@ struct ast *parse_pipeline(struct lexer *lexer);
 struct ast *parse_command_list(struct lexer *lexer);
 struct ast *parse_and_or(struct lexer *lexer);
 struct ast *parse_while(struct lexer *lexer);
+struct ast *parse_for(struct lexer *lexer);
 void ast_free(struct ast *node);
 
 #endif /* !PARSER_H */
