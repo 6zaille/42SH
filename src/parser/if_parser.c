@@ -48,10 +48,28 @@ static struct ast *parse_if_condition(struct lexer *lexer)
             lexer_pop(lexer);
             break;
         }
+        if (tok.type == TOKEN_IF)
+        {
+            struct ast *nested_if = parse_if_statement(lexer);
+            if (!nested_if)
+            {
+                ast_free(condition);
+                return NULL;
+            }
 
+            condition->children = realloc(condition->children,
+                                          sizeof(struct ast *) * (condition->children_count + 1));
+            if (!condition->children)
+            {
+                perror("realloc");
+                ast_free(condition);
+                return NULL;
+            }
+
+            condition->children[condition->children_count++] = nested_if;
+        }
         if (tok.type == TOKEN_EOF || tok.type == TOKEN_FI)
         {
-            // fprintf(stderr, "mauvais token fin dans if condition\n");
             ast_free(condition);
             return NULL;
         }
@@ -59,7 +77,6 @@ static struct ast *parse_if_condition(struct lexer *lexer)
         struct ast *cmd = parse_command_list(lexer);
         if (!cmd)
         {
-            // fprintf(stderr, "mauvaise commande dans if condition\n");
             ast_free(condition);
             return NULL;
         }
@@ -80,7 +97,7 @@ static struct ast *parse_if_condition(struct lexer *lexer)
         {
             lexer_pop(lexer);
         }
-        else if (tok.type != TOKEN_THEN)
+        else if (tok.type != TOKEN_THEN && tok.type != TOKEN_IF)
         {
             fprintf(stderr, "token anormal dans if'%s'\n",
                     tok.value ? tok.value : "NULL");
@@ -107,13 +124,12 @@ static struct ast *parse_then(struct lexer *lexer)
         if (tok.type == TOKEN_ELSE || tok.type == TOKEN_FI
             || tok.type == TOKEN_ELIF)
         {
-            // lexer_pop(lexer);
+            
             break;
         }
 
         if (tok.type == TOKEN_EOF)
         {
-            // fprintf(stderr, "probleme de fin dans parse_then\n");
             ast_free(condition);
             return NULL;
         }
@@ -146,15 +162,7 @@ static struct ast *parse_then(struct lexer *lexer)
         {
             break;
         }
-        /*
-        else if (tok.type != TOKEN_THEN)
-        {
-            fprintf(stderr, "token anormal dans then'%s'\n",
-                    tok.value ? tok.value : "NULL");
-            ast_free(condition);
-            return NULL;
-        }
-        */
+        
     }
 
     return condition;
@@ -174,13 +182,11 @@ static struct ast *parse_else(struct lexer *lexer)
         struct token tok = lexer_peek(lexer);
         if (tok.type == TOKEN_FI)
         {
-            // lexer_pop(lexer);
             break;
         }
 
         if (tok.type == TOKEN_EOF)
         {
-            // fprintf(stderr, "probleme de fin dans else\n");
             ast_free(condition);
             return NULL;
         }
@@ -213,15 +219,7 @@ static struct ast *parse_else(struct lexer *lexer)
         {
             break;
         }
-        /*
-        else if (tok.type != TOKEN_THEN)
-        {
-            fprintf(stderr, "token anormal dans else'%s'\n",
-                    tok.value ? tok.value : "NULL");
-            ast_free(condition);
-            return NULL;
-        }
-        */
+        
     }
 
     return condition;
