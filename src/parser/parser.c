@@ -348,6 +348,7 @@ struct ast *parse_while(struct lexer *lexer)
     ast_loop->children[0] = parse_command_list(lexer);
     if (!ast_loop->children[0])
     {
+        status_error = 2;
         ast_free(ast_loop);
         return NULL; 
     }
@@ -355,6 +356,7 @@ struct ast *parse_while(struct lexer *lexer)
     tok = lexer_peek(lexer);
     if (tok.type != TOKEN_DO)
     {
+        status_error = 2;
         ast_free(ast_loop);
         return NULL; 
     }
@@ -370,6 +372,7 @@ struct ast *parse_while(struct lexer *lexer)
     tok = lexer_peek(lexer);
     if (tok.type != TOKEN_DONE)
     {
+        status_error = 2;
         ast_free(ast_loop);
         return NULL; 
     }
@@ -467,6 +470,7 @@ struct ast *parse_pipeline(struct lexer *lexer)
         struct ast *next_command = parse_simple_command(lexer);
         if (!next_command)
         {
+            status_error = 2;
             ast_free(pipeline_node);
             return NULL;
         }
@@ -476,6 +480,7 @@ struct ast *parse_pipeline(struct lexer *lexer)
                     sizeof(struct ast *) * (pipeline_node->children_count + 1));
         if (!new_children)
         {
+            status_error = 2;
             ast_free(next_command);
             ast_free(pipeline_node);
             return NULL;

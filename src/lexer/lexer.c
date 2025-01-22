@@ -152,82 +152,71 @@ struct lexer *lexer_init(const char *input)
     return lexer;
 }
 
+void expand_variable(struct lexer *lexer, char *buffer, size_t *buf_index)
+{
+    char var_name[256] = { 0 };
+    size_t var_index = 0;
+
+    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_')
+    {
+        var_name[var_index++] = lexer->input[lexer->pos++];
+    }
+    var_name[var_index] = '\0';
+
+    const char *value = get_variable(var_name);
+    if (value)
+    {
+        strcpy(&buffer[*buf_index], value);
+        *buf_index += strlen(value);
+    }
+}
+
 static struct token *handle_word_token(struct lexer *lexer)
 {
     char *buffer = malloc(strlen(lexer->input) + 1);
     size_t buf_index = 0;
 
     while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos])
-           && lexer->input[lexer->pos] != ';'
-           && lexer->input[lexer->pos] != '\n')
+           && lexer->input[lexer->pos] != ';' && lexer->input[lexer->pos] != '\n')
     {
         if (lexer->input[lexer->pos] == '\\')
         {
-            lexer->pos++; // Skip escape character
+            lexer->pos++;
             buffer[buf_index++] = lexer->input[lexer->pos++];
+        }
+        else if (lexer->input[lexer->pos] == '\'')
+        {
+            lexer->pos++;
+            while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\'')
+                buffer[buf_index++] = lexer->input[lexer->pos++];
+            if (lexer->input[lexer->pos] == '\'')
+                lexer->pos++;
         }
         else if (lexer->input[lexer->pos] == '"')
         {
-            lexer->pos++; // Skip opening quote
+            lexer->pos++;
             while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '"')
             {
                 if (lexer->input[lexer->pos] == '\\'
-                    && (lexer->input[lexer->pos + 1] == '$'
-                        || lexer->input[lexer->pos + 1] == '"'))
+                    && (lexer->input[lexer->pos + 1] == '$' || lexer->input[lexer->pos + 1] == '"'))
                 {
                     lexer->pos++;
                 }
-                else if (lexer->input[lexer->pos]
-                         == '$')
+                else if (lexer->input[lexer->pos] == '$')
                 {
                     lexer->pos++;
-                    char var_name[256] = { 0 };
-                    size_t var_index = 0;
-
-                    while (isalnum(lexer->input[lexer->pos])
-                           || lexer->input[lexer->pos] == '_')
-                    {
-                        var_name[var_index++] = lexer->input[lexer->pos++];
-                    }
-                    var_name[var_index] = '\0';
-
-                    const char *value = get_variable(var_name);
-                    if (value)
-                    {
-                        strcpy(&buffer[buf_index], value);
-                        buf_index += strlen(value);
-                    }
+                    expand_variable(lexer, buffer, &buf_index);
+                    continue;
                 }
-                else
-                {
-                    buffer[buf_index++] = lexer->input[lexer->pos++];
-                }
+                buffer[buf_index++] = lexer->input[lexer->pos++];
             }
             if (lexer->input[lexer->pos] == '"')
-            {
-                lexer->pos++; // Skip closing quote
-            }
+                lexer->pos++;
         }
-        else if (lexer->input[lexer->pos]
-                 == '$')
+        else if (lexer->input[lexer->pos] == '$')
         {
             lexer->pos++;
-            char var_name[256] = { 0 };
-            size_t var_index = 0;
-
-            while (isalnum(lexer->input[lexer->pos])
-                   || lexer->input[lexer->pos] == '_')
-            {
-                var_name[var_index++] = lexer->input[lexer->pos++];
-            }
-            var_name[var_index] = '\0';
-
-            const char *value = get_variable(var_name);
-            if (value)
-            {
-                strcpy(&buffer[buf_index], value);
-                buf_index += strlen(value);
-            }
+            expand_variable(lexer, buffer, &buf_index);
         }
         else
         {
