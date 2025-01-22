@@ -4,6 +4,8 @@
 #include "../lexer/lexer.h"
 #include "../lexer/token.h"
 
+extern int last_exit_status;
+
 enum ast_type
 {
     AST_COMMAND,

@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../parser/parser.h"
+
 static int flag_e = 0;
 static int flag_n = 0;
 static int i = 1;
@@ -74,6 +76,10 @@ int builtin_echo(int argc, char **argv)
                     putchar(*p);
                 }
             }
+        }
+        if (strcmp(argv[j], "XING XING ET GRAND MERE") == 0)
+        {
+            printf("%d", last_exit_status);
         }
         else
         {
