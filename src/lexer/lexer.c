@@ -92,7 +92,16 @@ static struct token *handle_variable_substitution(struct lexer *lexer)
         buffer[buf_index++] = lexer->input[lexer->pos++];
     }
     buffer[buf_index] = '\0';
-
+    if (buffer[0] == '{' && buffer[buf_index - 1] == '}')
+    {
+        memmove(buffer, buffer + 1, buf_index - 2);
+        buffer[buf_index - 2] = '\0';
+    }
+    if (strcmp(buffer, "?") == 0)
+    {
+        free(buffer);
+        return token_init(TOKEN_WORD, strdup("XING XING ET GRAND MERE"));
+    }
     // Récupère la valeur via get_variable de utils.c
     const char *value = get_variable(buffer);
     free(buffer);
