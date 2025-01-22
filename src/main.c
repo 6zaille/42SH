@@ -339,29 +339,26 @@ int main(int argc, char **argv)
         return 2;
     }
     struct token tok = lexer_peek(lexer);
-    if (tok.type == TOKEN_NEWLINE)
+    while (tok.type == TOKEN_NEWLINE || tok.type == TOKEN_EOF)
     {
-        fprintf(stderr, "command not found\n");
-        return 127;
+        if (tok.type == TOKEN_EOF)
+            return 0;
+
+        lexer_pop(lexer);
+        tok = lexer_peek(lexer);
     }
-    int flag = 0;
     while (1)
     {
         tok = lexer_peek(lexer);
 
         if (tok.type == TOKEN_EOF)
             break;
-        if (flag == 1)
-        {
-            lexer_pop(lexer);
-        }
         struct ast *ast = parser_parse(lexer);
         if (!ast)
         {
             fprintf(stderr, "ast pas créé\n");
             break;
         }
-        flag = 1;
         ast_eval(ast);
         ast_free(ast);
     }
