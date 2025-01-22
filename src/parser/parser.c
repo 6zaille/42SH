@@ -256,7 +256,7 @@ static struct ast *parse_change(struct lexer *lexer)
 
 static int is_end_of_block(enum token_type type)
 {
-    return type == TOKEN_DO || type == TOKEN_DONE || type == TOKEN_THEN
+    return type == TOKEN_IF || type == TOKEN_DO || type == TOKEN_DONE || type == TOKEN_THEN
         || type == TOKEN_ELSE || type == TOKEN_ELIF || type == TOKEN_FI
         || type == TOKEN_EOF;
 }
