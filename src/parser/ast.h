@@ -52,7 +52,7 @@ struct ast_command_data
     size_t redirection_count; // nombre de redirections
 };
 
-//extern int last_exit_status;
+// extern int last_exit_status;
 extern int status_error;
 
 struct redirection

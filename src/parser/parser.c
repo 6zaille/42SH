@@ -10,7 +10,7 @@
 #include "../lexer/token.h"
 #include "ast.h"
 
-//int status_error = 0;
+// int status_error = 0;
 
 struct ast *ast_create(enum ast_type type)
 {
