@@ -276,13 +276,12 @@ struct ast *parse_command_list(struct lexer *lexer)
     {
         struct token tok = lexer_peek(lexer);
 
-        // Vérifier si nous sommes à la fin d'un bloc
         if (is_end_of_block(tok.type))
         {
             break;
         }
 
-        // Appeler parse_and_or pour chaque commande
+
         struct ast *command_node = parse_and_or(lexer);
         if (!command_node)
         {
@@ -300,7 +299,6 @@ struct ast *parse_command_list(struct lexer *lexer)
 
         commands[count++] = command_node;
 
-        // Gérer les séparateurs comme ';' et '\n'
         tok = lexer_peek(lexer);
         if (tok.type == TOKEN_SEMICOLON || tok.type == TOKEN_NEWLINE)
         {
@@ -312,7 +310,6 @@ struct ast *parse_command_list(struct lexer *lexer)
         }
         else
         {
-            // Token inattendu
             ast_free(list_node);
             return NULL;
         }
@@ -329,7 +326,7 @@ struct ast *parse_while(struct lexer *lexer)
 
     if (tok.type != TOKEN_WHILE && tok.type != TOKEN_UNTIL)
     {
-        return NULL; // Erreur : pas un TOKEN_WHILE ou TOKEN_UNTIL
+        return NULL;
     }
     lexer_pop(lexer);
 
@@ -337,53 +334,51 @@ struct ast *parse_while(struct lexer *lexer)
         ast_create(tok.type == TOKEN_WHILE ? AST_WHILE : AST_UNTIL);
     if (!ast_loop)
     {
-        return NULL; // Erreur : allocation échouée
+        return NULL; 
     }
-
-    // Allocation des enfants pour condition et corps
     ast_loop->children = malloc(2 * sizeof(struct ast *));
     if (!ast_loop->children)
     {
         ast_free(ast_loop);
-        return NULL; // Erreur : allocation échouée
+        return NULL; 
     }
     ast_loop->children_count = 2;
 
-    // Analyse de la condition
+
     ast_loop->children[0] = parse_command_list(lexer);
     if (!ast_loop->children[0])
     {
+        status_error = 2;
         ast_free(ast_loop);
-        return NULL; // Erreur : échec du parsing de la condition
+        return NULL; 
     }
 
-    // Vérifie le token 'do'
     tok = lexer_peek(lexer);
     if (tok.type != TOKEN_DO)
     {
+        status_error = 2;
         ast_free(ast_loop);
-        return NULL; // Erreur : 'do' attendu
+        return NULL; 
     }
     lexer_pop(lexer);
 
-    // Analyse du corps
     ast_loop->children[1] = parse_command_list(lexer);
     if (!ast_loop->children[1])
     {
         ast_free(ast_loop);
-        return NULL; // Erreur : échec du parsing du corps
+        return NULL; 
     }
 
-    // Vérifie le token 'done'
     tok = lexer_peek(lexer);
     if (tok.type != TOKEN_DONE)
     {
+        status_error = 2;
         ast_free(ast_loop);
-        return NULL; // Erreur : 'done' attendu
+        return NULL; 
     }
     lexer_pop(lexer);
 
-    return ast_loop; // Succès
+    return ast_loop; 
 }
 
 struct ast *parser_parse(struct lexer *lexer)
@@ -479,6 +474,7 @@ struct ast *parse_pipeline(struct lexer *lexer)
         struct ast *next_command = parse_simple_command(lexer);
         if (!next_command)
         {
+            status_error = 2;
             ast_free(pipeline_node);
             return NULL;
         }
@@ -488,6 +484,7 @@ struct ast *parse_pipeline(struct lexer *lexer)
                     sizeof(struct ast *) * (pipeline_node->children_count + 1));
         if (!new_children)
         {
+            status_error = 2;
             ast_free(next_command);
             ast_free(pipeline_node);
             return NULL;

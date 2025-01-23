@@ -7,6 +7,7 @@ TOTAL_TESTS=0
 PASSED_TESTS=0
 FAILED_TESTS=0
 BIN_PATH="./src/42sh"
+OUTPUT_FILE=${OUTPUT_FILE:-"./out"}
 
 if [ ! -f "$BIN_PATH" ]; then
     printf "chef il manque le binary 42sh %s\n" "$BIN_PATH"
@@ -401,6 +402,12 @@ rm log.txt
 # Final Report
 echo "====================================="
 PERCENT_PASSED=$((PASSED_TESTS * 100 / TOTAL_TESTS))
+echo "$PERCENT_PASSED" > "$OUTPUT_FILE"
+
+# Résumé des échecs en mode couverture uniquement
+if [ "$COVERAGE" = "yes" ] && [ $FAILED_TESTS -gt 0 ]; then
+    echo "Tests échoués : $FAILED_TEST_NAMES"
+fi
 
 if [ $PERCENT_PASSED -ge 90 ]; then
     COLOR="\033[32m" # Vert

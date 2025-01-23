@@ -63,7 +63,6 @@ static struct token *handle_assignment(struct lexer *lexer)
         }
         value[value_index] = '\0';
 
-        // Utilise set_variable de utils.c
         set_variable(name, value);
         free(value);
 
@@ -78,7 +77,7 @@ static struct token *handle_assignment(struct lexer *lexer)
 // Fonction pour analyser les substitutions
 static struct token *handle_variable_substitution(struct lexer *lexer)
 {
-    lexer->pos++; // Skip '$'
+    lexer->pos++;
 
     char *buffer = malloc(strlen(lexer->input) + 1);
     size_t buf_index = 0;
@@ -102,7 +101,6 @@ static struct token *handle_variable_substitution(struct lexer *lexer)
         free(buffer);
         return token_init(TOKEN_WORD, strdup("XING XING ET GRAND MERE"));
     }
-    // Récupère la valeur via get_variable de utils.c
     const char *value = get_variable(buffer);
     free(buffer);
 
@@ -158,84 +156,71 @@ struct lexer *lexer_init(const char *input)
     return lexer;
 }
 
+void expand_variable(struct lexer *lexer, char *buffer, size_t *buf_index)
+{
+    char var_name[256] = { 0 };
+    size_t var_index = 0;
+
+    while (isalnum(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == '_')
+    {
+        var_name[var_index++] = lexer->input[lexer->pos++];
+    }
+    var_name[var_index] = '\0';
+
+    const char *value = get_variable(var_name);
+    if (value)
+    {
+        strcpy(&buffer[*buf_index], value);
+        *buf_index += strlen(value);
+    }
+}
+
 static struct token *handle_word_token(struct lexer *lexer)
 {
     char *buffer = malloc(strlen(lexer->input) + 1);
     size_t buf_index = 0;
 
     while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos])
-           && lexer->input[lexer->pos] != ';'
-           && lexer->input[lexer->pos] != '\n')
+           && lexer->input[lexer->pos] != ';' && lexer->input[lexer->pos] != '\n')
     {
-        if (lexer->input[lexer->pos] == '\\') // Handle escape sequences
+        if (lexer->input[lexer->pos] == '\\')
         {
-            lexer->pos++; // Skip escape character
+            lexer->pos++;
             buffer[buf_index++] = lexer->input[lexer->pos++];
         }
-        else if (lexer->input[lexer->pos] == '"') // Handle double quotes
+        else if (lexer->input[lexer->pos] == '\'')
         {
-            lexer->pos++; // Skip opening quote
+            lexer->pos++;
+            while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\'')
+                buffer[buf_index++] = lexer->input[lexer->pos++];
+            if (lexer->input[lexer->pos] == '\'')
+                lexer->pos++;
+        }
+        else if (lexer->input[lexer->pos] == '"')
+        {
+            lexer->pos++;
             while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '"')
             {
                 if (lexer->input[lexer->pos] == '\\'
-                    && (lexer->input[lexer->pos + 1] == '$'
-                        || lexer->input[lexer->pos + 1] == '"'))
-                {
-                    lexer->pos++; // Skip escape character
-                }
-                else if (lexer->input[lexer->pos]
-                         == '$') // Handle variable substitution
+                    && (lexer->input[lexer->pos + 1] == '$' || lexer->input[lexer->pos + 1] == '"'))
                 {
                     lexer->pos++;
-                    char var_name[256] = { 0 };
-                    size_t var_index = 0;
-
-                    // Extract the variable name
-                    while (isalnum(lexer->input[lexer->pos])
-                           || lexer->input[lexer->pos] == '_')
-                    {
-                        var_name[var_index++] = lexer->input[lexer->pos++];
-                    }
-                    var_name[var_index] = '\0';
-
-                    // Fetch the variable value
-                    const char *value = get_variable(var_name);
-                    if (value)
-                    {
-                        strcpy(&buffer[buf_index], value);
-                        buf_index += strlen(value);
-                    }
                 }
-                else
+                else if (lexer->input[lexer->pos] == '$')
                 {
-                    buffer[buf_index++] = lexer->input[lexer->pos++];
+                    lexer->pos++;
+                    expand_variable(lexer, buffer, &buf_index);
+                    continue;
                 }
+                buffer[buf_index++] = lexer->input[lexer->pos++];
             }
             if (lexer->input[lexer->pos] == '"')
-            {
-                lexer->pos++; // Skip closing quote
-            }
+                lexer->pos++;
         }
-        else if (lexer->input[lexer->pos]
-                 == '$') // Handle variable substitution outside quotes
+        else if (lexer->input[lexer->pos] == '$')
         {
             lexer->pos++;
-            char var_name[256] = { 0 };
-            size_t var_index = 0;
-
-            while (isalnum(lexer->input[lexer->pos])
-                   || lexer->input[lexer->pos] == '_')
-            {
-                var_name[var_index++] = lexer->input[lexer->pos++];
-            }
-            var_name[var_index] = '\0';
-
-            const char *value = get_variable(var_name);
-            if (value)
-            {
-                strcpy(&buffer[buf_index], value);
-                buf_index += strlen(value);
-            }
+            expand_variable(lexer, buffer, &buf_index);
         }
         else
         {

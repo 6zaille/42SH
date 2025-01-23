@@ -135,7 +135,7 @@ const char *get_variable(const char *name)
 // Substitue les variables dans une chaîne de caractères
 char *substitute_variables(const char *input)
 {
-    char *result = malloc(4096); // Taille max d'une ligne
+    char *result = malloc(4096);
     if (!result)
     {
         perror("malloc");
