@@ -298,50 +298,27 @@ int handle_stdin_mode(void)
 
     return 0;
 }
-
-int main(int argc, char **argv)
+void process_command_line_argument(int argc, char **argv, char **buffer, int *result)
 {
-    char *buffer = NULL;
-    int result = 0;
-    if (argc == 1)
-    {
-        return handle_stdin_mode();
-    }
-    if (argc > 1 && strcmp(argv[1], "-c") == 0)
-    {
-        init_shell();
-        result = handle_command_line_argument(argc, argv, &buffer);
-    }
-    else if (argc > 1)
-    {
-        init_shell();
-        init_args(argc, argv);
-        init_variables(argc, argv);
-        result = handle_file_input(argv[1], &buffer);
-    }
-    else
-    {
-        fprintf(stderr, "Error: No input provided\n");
-        return 127;
-    }
+    init_shell();
+    *result = handle_command_line_argument(argc, argv, buffer);
+}
 
-    if (result != 0)
-    {
-        return result;
-    }
+void process_file_input(int argc, char **argv, char **buffer, int *result)
+{
+    init_shell();
+    init_args(argc, argv);
+    init_variables(argc, argv);
+    *result = handle_file_input(argv[1], buffer);
+}
 
-    struct lexer *lexer = lexer_init(buffer);
-    if (!lexer)
-    {
-        fprintf(stderr, "Failed to initialize lexer\n");
-        free(buffer);
-        return 2;
-    }
+void process_tokens(struct lexer *lexer)
+{
     struct token tok = lexer_peek(lexer);
     while (tok.type == TOKEN_NEWLINE || tok.type == TOKEN_EOF)
     {
         if (tok.type == TOKEN_EOF)
-            return 0;
+            return;
 
         lexer_pop(lexer);
         tok = lexer_peek(lexer);
@@ -361,6 +338,45 @@ int main(int argc, char **argv)
         ast_eval(ast);
         ast_free(ast);
     }
+}
+
+int main(int argc, char **argv)
+{
+    char *buffer = NULL;
+    int result = 0;
+    if (argc == 1)
+    {
+        return handle_stdin_mode();
+    }
+    if (argc > 1 && strcmp(argv[1], "-c") == 0)
+    {
+        process_command_line_argument(argc, argv, &buffer, &result);
+    }
+    else if (argc > 1)
+    {
+        process_file_input(argc, argv, &buffer, &result);
+    }
+    else
+    {
+        fprintf(stderr, "Error: No input provided\n");
+        return 127;
+    }
+
+    if (result != 0)
+    {
+        return result;
+    }
+
+    struct lexer *lexer = lexer_init(buffer);
+    if (!lexer)
+    {
+        fprintf(stderr, "Failed to initialize lexer\n");
+        free(buffer);
+        return 2;
+    }
+
+    process_tokens(lexer);
+
     if (status_error != 0)
     {
         return status_error;
