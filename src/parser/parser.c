@@ -302,8 +302,13 @@ struct ast *parse_command_list(struct lexer *lexer)
         tok = lexer_peek(lexer);
         if (tok.type == TOKEN_SEMICOLON || tok.type == TOKEN_NEWLINE)
         {
-            lexer_pop(lexer);
+            do
+            {
+                lexer_pop(lexer);
+                tok = lexer_peek(lexer);
+            } while (tok.type == TOKEN_SEMICOLON || tok.type == TOKEN_NEWLINE);
         }
+
         else if (tok.type == TOKEN_EOF)
         {
             break;

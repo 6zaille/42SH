@@ -185,20 +185,23 @@ static struct token *handle_word_token(struct lexer *lexer)
     {
         if (lexer->input[lexer->pos] == '\\')
         {
-            lexer->pos++;
-            buffer[buf_index++] = lexer->input[lexer->pos++];
+            lexer->pos++; // Skip escape character
+            if (lexer->input[lexer->pos])
+                buffer[buf_index++] = lexer->input[lexer->pos++];
         }
         else if (lexer->input[lexer->pos] == '\'')
         {
-            lexer->pos++;
-            while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\'')
+            lexer->pos++; // Skip opening single quote
+            while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\'' && !isspace(lexer->input[lexer->pos]))
+            {
                 buffer[buf_index++] = lexer->input[lexer->pos++];
+            }
             if (lexer->input[lexer->pos] == '\'')
-                lexer->pos++;
+                lexer->pos++; // Skip closing single quote
         }
         else if (lexer->input[lexer->pos] == '"')
         {
-            lexer->pos++;
+            lexer->pos++; // Skip opening double quote
             while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '"')
             {
                 if (lexer->input[lexer->pos] == '\\'
@@ -215,7 +218,7 @@ static struct token *handle_word_token(struct lexer *lexer)
                 buffer[buf_index++] = lexer->input[lexer->pos++];
             }
             if (lexer->input[lexer->pos] == '"')
-                lexer->pos++;
+                lexer->pos++; // Skip closing double quote
         }
         else if (lexer->input[lexer->pos] == '$')
         {
@@ -226,6 +229,10 @@ static struct token *handle_word_token(struct lexer *lexer)
         {
             buffer[buf_index++] = lexer->input[lexer->pos++];
         }
+
+        // Stop if we encounter a delimiter outside quotes
+        if (isspace(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == ';')
+            break;
     }
 
     buffer[buf_index] = '\0';
