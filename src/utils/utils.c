@@ -1,6 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "utils.h"
+#include "../parser/ast.h"
+#include "args.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -9,25 +11,9 @@
 #include <time.h>
 #include <unistd.h>
 
-struct variable variables[MAX_VARIABLES];
-size_t variable_count = 0;
-int verbose_mode = 0;
-static int last_exit_status = 0;
-char *pwd = NULL;
-char *oldpwd = NULL;
+//GLOBALS
+char *args[256];
 
-void set_verbose_mode(int enabled)
-{
-    verbose_mode = enabled;
-}
-
-void verbose_log(const char *message)
-{
-    if (verbose_mode)
-    {
-        fprintf(stderr, "[VERBOSE]: %s\n", message);
-    }
-}
 
 // Recherche une variable par son nom
 static struct variable *find_variable(const char *name)

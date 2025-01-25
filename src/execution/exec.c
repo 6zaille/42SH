@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "../parser/ast.h"
+#include "../utils/pwd.h"
 #include "builtins.h"
 
 #ifndef O_CLOEXEC
@@ -23,6 +24,9 @@ struct saved_fd
 extern int loop_running;
 static struct saved_fd *saved_fds = NULL;
 static size_t saved_fd_count = 0;
+
+//GLOBALS
+char *pwd = NULL;
 
 static void save_fd(int fd);
 static void restore_fds(void);

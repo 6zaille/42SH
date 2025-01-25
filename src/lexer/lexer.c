@@ -8,6 +8,10 @@
 #include <string.h>
 
 #include "token.h"
+#include "../utils/variables.h"
+
+//GLOBAL
+struct variable variables[MAX_VARIABLES];
 
 static void skip_whitespace(struct lexer *lexer)
 {

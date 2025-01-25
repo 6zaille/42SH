@@ -11,7 +11,7 @@
 #include "parser/parser.h"
 #include "utils/utils.h"
 
-char *args[256];
+
 size_t args_count = 0;
 
 /*

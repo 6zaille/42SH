@@ -5,6 +5,10 @@
 #include <string.h>
 
 #include "../parser/parser.h"
+#include "../utils/oldpwd.h"
+
+//GLOBALS
+char *oldpwd = NULL;
 
 void print_with_escape(const char *str)
 {

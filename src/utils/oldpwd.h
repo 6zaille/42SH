@@ -1,6 +1,6 @@
-#ifndef OLD_PWD_H
-#define OLD_PWD_H
+#ifndef OLDPWD_H
+#define OLDPWD_H
 
 extern char *oldpwd;
 
-#endif /* !OLD_PWD_H */
+#endif /* !OLDPWD_H */

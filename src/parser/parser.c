@@ -9,8 +9,12 @@
 #include "../lexer/lexer.h"
 #include "../lexer/token.h"
 #include "ast.h"
+#include "../utils/variables_count.h"
 
 //int status_error = 0;
+
+//GLOBAL
+size_t variable_count = 0;
 
 struct ast *ast_create(enum ast_type type)
 {

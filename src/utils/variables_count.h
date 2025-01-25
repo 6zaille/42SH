@@ -1,5 +1,5 @@
-#ifndef VARIABLE_COUNT_H
-#define VARIABLE_COUNT_H
+#ifndef VARIABLES_COUNT_H
+#define VARIABLES_COUNT_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,4 +7,4 @@
 
 extern size_t variable_count;
 
-#endif /* !VARIABLE_COUNT_H */
+#endif /* !VARIABLES_COUNT_H */
