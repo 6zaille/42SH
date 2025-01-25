@@ -297,10 +297,8 @@ int handle_stdin_mode(void)
 
     return 0;
 }
-
-
-
-void process_command_line_argument(int argc, char **argv, char **buffer, int *result)
+void process_command_line_argument(int argc, char **argv, char **buffer,
+                                   int *result)
 {
     init_shell();
     *result = handle_command_line_argument(argc, argv, buffer);

@@ -127,6 +127,34 @@ int handle_fd_redirection(char **argv, int i, const char *symbol, int target_fd)
     return 0;
 }
 
+int handle_pid(int pid, char **argv)
+{
+    if (pid == 0)
+    {
+        if (execvp(argv[0], argv) == -1)
+        {
+            perror("42sh");
+            exit(127);
+        }
+    }
+    else if (pid > 0)
+    {
+        int status;
+        waitpid(pid, &status, 0);
+        restore_fds();
+        if (WIFEXITED(status))
+        {
+            return WEXITSTATUS(status);
+        }
+    }
+    else
+    {
+        perror("fork");
+        return 1;
+    }
+    return 0;
+}
+
 int execute_command(int argc, char **argv)
 {
     for (int i = 0; i < argc; i++)
@@ -179,30 +207,8 @@ int execute_command(int argc, char **argv)
     }
 
     pid_t pid = fork();
-    if (pid == 0)
-    {
-        if (execvp(argv[0], argv) == -1)
-        {
-            perror("42sh");
-            exit(127);
-        }
-    }
-    else if (pid > 0)
-    {
-        int status;
-        waitpid(pid, &status, 0);
-        restore_fds();
-        if (WIFEXITED(status))
-        {
-            return WEXITSTATUS(status);
-        }
-    }
-    else
-    {
-        perror("fork");
-        return 1;
-    }
-    return 0;
+
+    return handle_pid(pid, argv);
 }
 
 int execute_builtin(int argc, char **argv)
