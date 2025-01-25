@@ -204,8 +204,6 @@ void init_variables(int argc, char **argv)
 
 int handle_stdin_mode(void)
 {
-    char *buffer = NULL;
-    size_t buffer_size = 0;
     char *accumulated_input = calloc(1, sizeof(char));
     if (!accumulated_input)
     {
@@ -213,25 +211,32 @@ int handle_stdin_mode(void)
         return 1;
     }
 
+    size_t buffer_size = 1024;
+    char *buffer = malloc(buffer_size);
+    if (!buffer)
+    {
+        perror("malloc");
+        free(accumulated_input);
+        return 1;
+    }
+
     while (1)
     {
-        // printf("42sh> ");
-        fflush(stdout);
-
-        ssize_t line_length = getline(&buffer, &buffer_size, stdin);
-
-        if (line_length == -1)
+        ssize_t bytes_read = read(STDIN_FILENO, buffer, buffer_size - 1);
+        if (bytes_read == -1)
         {
-            if (feof(stdin))
-                break;
-            perror("getline");
-            continue;
+            perror("read");
+            free(buffer);
+            free(accumulated_input);
+            return 1;
         }
 
-        if (line_length == 1 && buffer[0] == '\n')
-            continue;
+        if (bytes_read == 0) // EOF
+            break;
 
-        size_t new_length = strlen(accumulated_input) + line_length + 1;
+        buffer[bytes_read] = '\0'; // Null-terminate the buffer
+
+        size_t new_length = strlen(accumulated_input) + bytes_read + 1;
         char *new_accumulated = realloc(accumulated_input, new_length);
         if (!new_accumulated)
         {
@@ -243,54 +248,48 @@ int handle_stdin_mode(void)
         accumulated_input = new_accumulated;
         strcat(accumulated_input, buffer);
 
-        char *temp_input = strdup(accumulated_input);
-        if (!temp_input)
-        {
-            perror("strdup");
-            free(accumulated_input);
-            free(buffer);
-            return 1;
-        }
-
-        struct lexer *lexer = lexer_init(temp_input);
+        struct lexer *lexer = lexer_init(accumulated_input);
         if (!lexer)
         {
             fprintf(stderr, "Erreur d'initialisation du lexer\n");
-            free(temp_input);
             free(buffer);
             free(accumulated_input);
             return 1;
         }
 
-        struct ast *ast = parser_parse(lexer);
-
-        if (ast)
+        while (1)
         {
-            ast_eval(ast);
-            ast_free(ast);
+            struct token tok = lexer_peek(lexer);
+            if (tok.type == TOKEN_EOF)
+                break;
 
-            free(accumulated_input);
-            accumulated_input = calloc(1, sizeof(char));
-            if (!accumulated_input)
+            struct ast *ast = parser_parse(lexer);
+            if (ast)
             {
-                perror("calloc");
-                free(buffer);
-                lexer_destroy(lexer);
-                free(temp_input);
-                return 1;
+                ast_eval(ast);
+                ast_free(ast);
+
+                //free(accumulated_input);
+                //accumulated_input = calloc(1, sizeof(char));
+                /*if (!accumulated_input)
+                {
+                    perror("calloc");
+                    lexer_destroy(lexer);
+                    free(buffer);
+                    return 1;
+                }*/
+            }
+            else
+            {
+                tok = lexer_peek(lexer);
+                if (tok.type == TOKEN_EOF)
+                {
+                    break;
+                }
             }
         }
-        else
-        {
-            // printf("42sh> ");
-            fflush(stdout);
-        }
+
         lexer_destroy(lexer);
-
-        // lexer->input = NULL;
-
-        // free(lexer);
-        free(temp_input);
     }
 
     free(buffer);
@@ -298,6 +297,9 @@ int handle_stdin_mode(void)
 
     return 0;
 }
+
+
+
 void process_command_line_argument(int argc, char **argv, char **buffer, int *result)
 {
     init_shell();
@@ -312,14 +314,13 @@ void process_file_input(int argc, char **argv, char **buffer, int *result)
     *result = handle_file_input(argv[1], buffer);
 }
 
-void process_tokens(struct lexer *lexer)
+int process_tokens(struct lexer *lexer)
 {
     struct token tok = lexer_peek(lexer);
     while (tok.type == TOKEN_NEWLINE || tok.type == TOKEN_EOF)
     {
         if (tok.type == TOKEN_EOF)
-            return;
-
+            return 0;
         lexer_pop(lexer);
         tok = lexer_peek(lexer);
     }
@@ -335,9 +336,14 @@ void process_tokens(struct lexer *lexer)
             fprintf(stderr, "ast pas créé\n");
             break;
         }
+        if (status_error != 0)
+        {
+            return status_error;
+        }
         ast_eval(ast);
         ast_free(ast);
     }
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -375,12 +381,12 @@ int main(int argc, char **argv)
         return 2;
     }
 
-    process_tokens(lexer);
-
-    if (status_error != 0)
+    int check = process_tokens(lexer);
+    if (check != 0)
     {
-        return status_error;
+        return check;
     }
+    
     lexer_destroy(lexer);
     free(buffer);
     free(pwd);
