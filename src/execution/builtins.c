@@ -51,6 +51,52 @@ void print_with_escape(const char *str)
     }
 }
 
+void handle_echo_options(int argc, char **argv, int *flag_n, int *flag_e,
+                         int *flag_E, int *i)
+{
+    while (*i < argc && argv[*i][0] == '-' && argv[*i][1] != '\0')
+    {
+        for (int j = 1; argv[*i][j] != '\0'; j++)
+        {
+            if (argv[*i][j] == 'n')
+                *flag_n = 1;
+            else if (argv[*i][j] == 'e')
+            {
+                *flag_e = 1;
+                *flag_E = 0;
+            }
+            else if (argv[*i][j] == 'E')
+            {
+                *flag_E = 1;
+                *flag_e = 0;
+            }
+            else
+                return;
+        }
+        (*i)++;
+    }
+}
+
+void print_echo_argument(const char *arg, int flag_e, int flag_E)
+{
+    if (flag_e == 1 && flag_E == 0)
+    {
+        print_with_escape(arg);
+    }
+    else
+    {
+        if (strcmp(arg, "XING XING ET GRAND MERE") == 0)
+        {
+            if (last_exit_status == 0)
+                putchar('0');
+            else
+                putchar('1');
+        }
+        else
+            fputs(arg, stdout);
+    }
+}
+
 int builtin_echo(int argc, char **argv)
 {
     int flag_n = 0;
@@ -58,51 +104,15 @@ int builtin_echo(int argc, char **argv)
     int flag_E = 1;
     int i = 1;
 
-    // Traitement des options
-    while (i < argc && argv[i][0] == '-' && argv[i][1] != '\0')
-    {
-        for (int j = 1; argv[i][j] != '\0'; j++)
-        {
-            if (argv[i][j] == 'n')
-                flag_n = 1;
-            else if (argv[i][j] == 'e')
-            {
-                flag_e = 1;
-                flag_E = 0;
-            }
-            else if (argv[i][j] == 'E')
-            {
-                flag_E = 1;
-                flag_e = 0;
-            }
-            else
-                goto end_options;
-        }
-        i++;
-    }
+    handle_echo_options(argc, argv, &flag_n, &flag_e, &flag_E, &i);
 
-end_options:
     for (int j = i; j < argc; j++)
     {
         if (j > i)
             putchar(' ');
-        if (flag_e == 1 && flag_E == 0)
-        {
-            print_with_escape(argv[j]);
-        }
-        else
-        {
-            if (strcmp(argv[j], "XING XING ET GRAND MERE") == 0)
-            {
-                if (last_exit_status == 0)
-                    putchar('0');
-                else
-                    putchar('1');
-            }
-            else
-                fputs(argv[j], stdout);
-        }
+        print_echo_argument(argv[j], flag_e, flag_E);
     }
+
     if (!flag_n)
         putchar('\n');
 
