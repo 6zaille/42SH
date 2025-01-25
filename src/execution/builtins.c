@@ -84,6 +84,14 @@ end_options:
         }
         else
         {
+            if (strcmp(argv[j], "XING XING ET GRAND MERE")==0)
+            {
+                if (last_exit_status == 0)
+                    putchar('0');
+                else
+                    putchar('1');
+            }
+            else
             fputs(argv[j], stdout);
         }
     }
