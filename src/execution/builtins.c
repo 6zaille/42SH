@@ -40,7 +40,7 @@ void print_with_escape(const char *str)
             putchar('0');
             else
             putchar('1');
-            str += 22; // Avancer le pointeur pour ignorer "XING XING ET GRAND MERE"
+            str += 22; 
         }
         else
         {
@@ -53,8 +53,8 @@ void print_with_escape(const char *str)
 int builtin_echo(int argc, char **argv)
 {
     int flag_n = 0;
-    int flag_e = 0; // -e enabled
-    int flag_E = 1; // -E enabled by default
+    int flag_e = 0;
+    int flag_E = 1;
     int i = 1;
 
     // Traitement des options
@@ -75,13 +75,12 @@ int builtin_echo(int argc, char **argv)
                 flag_e = 0;
             }
             else
-                goto end_options; // Option non reconnue, fin du traitement des options
+                goto end_options;
         }
         i++;
     }
 
 end_options:
-    // Affichage des arguments restants
     for (int j = i; j < argc; j++)
     {
         if (j > i)
@@ -103,8 +102,6 @@ end_options:
             fputs(argv[j], stdout);
         }
     }
-
-    // Ajouter un saut de ligne si -n n'est pas activé
     if (!flag_n)
         putchar('\n');
 
@@ -132,5 +129,5 @@ int builtin_exit(int argc, char **argv)
     }
 
     exit(exit_code);
-    return 0; // Jamais atteint mais pour eviter des warnings.
+    return 0;
 }
