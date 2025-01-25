@@ -7,7 +7,7 @@
 #include "../parser/parser.h"
 #include "../utils/oldpwd.h"
 
-//GLOBALS
+// GLOBALS
 char *oldpwd = NULL;
 
 void print_with_escape(const char *str)
@@ -34,13 +34,14 @@ void print_with_escape(const char *str)
                 break;
             }
         }
-        else if (*str == 'X' && strncmp(str, "XING XING ET GRAND MERE", 23) == 0)
+        else if (*str == 'X'
+                 && strncmp(str, "XING XING ET GRAND MERE", 23) == 0)
         {
             if (last_exit_status == 0)
-            putchar('0');
+                putchar('0');
             else
-            putchar('1');
-            str += 22; 
+                putchar('1');
+            str += 22;
         }
         else
         {
@@ -91,7 +92,7 @@ end_options:
         }
         else
         {
-            if (strcmp(argv[j], "XING XING ET GRAND MERE")==0)
+            if (strcmp(argv[j], "XING XING ET GRAND MERE") == 0)
             {
                 if (last_exit_status == 0)
                     putchar('0');
@@ -99,7 +100,7 @@ end_options:
                     putchar('1');
             }
             else
-            fputs(argv[j], stdout);
+                fputs(argv[j], stdout);
         }
     }
     if (!flag_n)

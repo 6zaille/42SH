@@ -25,7 +25,7 @@ extern int loop_running;
 static struct saved_fd *saved_fds = NULL;
 static size_t saved_fd_count = 0;
 
-//GLOBALS
+// GLOBALS
 char *pwd = NULL;
 
 static void save_fd(int fd);

@@ -1,8 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "utils.h"
-#include "../parser/ast.h"
-#include "args.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -11,9 +9,11 @@
 #include <time.h>
 #include <unistd.h>
 
-//GLOBALS
-char *args[256];
+#include "../parser/ast.h"
+#include "args.h"
 
+// GLOBALS
+char *args[256];
 
 // Recherche une variable par son nom
 static struct variable *find_variable(const char *name)

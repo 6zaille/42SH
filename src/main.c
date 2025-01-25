@@ -11,7 +11,6 @@
 #include "parser/parser.h"
 #include "utils/utils.h"
 
-
 size_t args_count = 0;
 
 /*
@@ -216,7 +215,7 @@ int handle_stdin_mode(void)
 
     while (1)
     {
-        //printf("42sh> ");
+        // printf("42sh> ");
         fflush(stdout);
 
         ssize_t line_length = getline(&buffer, &buffer_size, stdin);

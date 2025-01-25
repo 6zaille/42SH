@@ -7,10 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "token.h"
 #include "../utils/variables.h"
+#include "token.h"
 
-//GLOBAL
+// GLOBAL
 struct variable variables[MAX_VARIABLES];
 
 static void skip_whitespace(struct lexer *lexer)
@@ -185,7 +185,8 @@ static struct token *handle_word_token(struct lexer *lexer)
     size_t buf_index = 0;
 
     while (lexer->input[lexer->pos] && !isspace(lexer->input[lexer->pos])
-           && lexer->input[lexer->pos] != ';' && lexer->input[lexer->pos] != '\n')
+           && lexer->input[lexer->pos] != ';'
+           && lexer->input[lexer->pos] != '\n')
     {
         if (lexer->input[lexer->pos] == '\\')
         {
@@ -196,7 +197,8 @@ static struct token *handle_word_token(struct lexer *lexer)
         else if (lexer->input[lexer->pos] == '\'')
         {
             lexer->pos++; // Skip opening single quote
-            while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\'' && !isspace(lexer->input[lexer->pos]))
+            while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\''
+                   && !isspace(lexer->input[lexer->pos]))
             {
                 buffer[buf_index++] = lexer->input[lexer->pos++];
             }
@@ -209,7 +211,8 @@ static struct token *handle_word_token(struct lexer *lexer)
             while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '"')
             {
                 if (lexer->input[lexer->pos] == '\\'
-                    && (lexer->input[lexer->pos + 1] == '$' || lexer->input[lexer->pos + 1] == '"'))
+                    && (lexer->input[lexer->pos + 1] == '$'
+                        || lexer->input[lexer->pos + 1] == '"'))
                 {
                     lexer->pos++;
                 }
@@ -235,13 +238,80 @@ static struct token *handle_word_token(struct lexer *lexer)
         }
 
         // Stop if we encounter a delimiter outside quotes
-        if (isspace(lexer->input[lexer->pos]) || lexer->input[lexer->pos] == ';')
+        if (isspace(lexer->input[lexer->pos])
+            || lexer->input[lexer->pos] == ';')
             break;
     }
 
     buffer[buf_index] = '\0';
     enum token_type type = check_keyword(buffer);
     return token_init(type, buffer);
+}
+static struct token *handle_and(struct lexer *lexer)
+{
+    lexer->pos += 2;
+    return token_init(TOKEN_AND, strdup("&&"));
+}
+
+static struct token *handle_or_pipe(struct lexer *lexer)
+{
+    if (lexer->input[lexer->pos + 1] == '|')
+    {
+        lexer->pos += 2;
+        return token_init(TOKEN_OR, strdup("||"));
+    }
+    else
+    {
+        lexer->pos++;
+        return token_init(TOKEN_PIPE, strdup("|"));
+    }
+}
+
+static struct token *handle_backslash(struct lexer *lexer)
+{
+    lexer->pos++;
+    if (lexer->input[lexer->pos] == 'n')
+    {
+        lexer->pos++;
+        return token_init(TOKEN_NEWLINE, NULL);
+    }
+    return NULL;
+}
+
+static struct token *handle_special_char(struct lexer *lexer, char c)
+{
+    if (c == '&' && lexer->input[lexer->pos + 1] == '&')
+    {
+        return handle_and(lexer);
+    }
+    if (c == '|')
+    {
+        return handle_or_pipe(lexer);
+    }
+    if (c == '\\')
+    {
+        return handle_backslash(lexer);
+    }
+    if (c == '$')
+    {
+        return handle_variable_substitution(lexer);
+    }
+    if (c == '\n')
+    {
+        lexer->pos++;
+        return token_init(TOKEN_NEWLINE, NULL);
+    }
+    if (c == ';')
+    {
+        lexer->pos++;
+        return token_init(TOKEN_SEMICOLON, strdup(";"));
+    }
+    if (c == '!')
+    {
+        lexer->pos++;
+        return token_init(TOKEN_NEGATION, strdup("!"));
+    }
+    return NULL;
 }
 
 struct token *lexer_next_token(struct lexer *lexer)
@@ -255,49 +325,13 @@ struct token *lexer_next_token(struct lexer *lexer)
     }
 
     char c = lexer->input[lexer->pos];
+    struct token *token = handle_special_char(lexer, c);
+    if (token)
+    {
+        return token;
+    }
 
-    if (c == '&' && lexer->input[lexer->pos + 1] == '&')
-    {
-        lexer->pos += 2;
-        return token_init(TOKEN_AND, strdup("&&"));
-    }
-    if (c == '|')
-    {
-        if (lexer->input[lexer->pos + 1] == '|')
-        {
-            lexer->pos += 2;
-            return token_init(TOKEN_OR, strdup("||"));
-        }
-        else
-        {
-            lexer->pos++;
-            return token_init(TOKEN_PIPE, strdup("|"));
-        }
-    }
-    else if (c == '\'')
-    {
-        lexer->pos++;
-        return lexer_next_token(lexer);
-    }
-    else if (c == '\\')
-    {
-        lexer->pos++;
-        if (lexer->input[lexer->pos] == 'n')
-        {
-            lexer->pos++;
-            return token_init(TOKEN_NEWLINE, NULL);
-        }
-    }
-    else if (c == '$')
-    {
-        return handle_variable_substitution(lexer);
-    }
-    else if (c == '\n')
-    {
-        lexer->pos++;
-        return token_init(TOKEN_NEWLINE, NULL);
-    }
-    else if (isalnum(c) || c == '_')
+    if (isalnum(c) || c == '_')
     {
         size_t temp_pos = lexer->pos;
         while (isalnum(lexer->input[temp_pos]) || lexer->input[temp_pos] == '_')
@@ -310,22 +344,8 @@ struct token *lexer_next_token(struct lexer *lexer)
         }
         return handle_word_token(lexer);
     }
-    else if (c == ';')
-    {
-        lexer->pos++;
-        return token_init(TOKEN_SEMICOLON, strdup(";"));
-    }
-    else if (c == '!')
-    {
-        lexer->pos++;
-        return token_init(TOKEN_NEGATION, strdup("!"));
-    }
-    else
-    {
-        return handle_word_token(lexer);
-    }
 
-    return token_init(TOKEN_ERROR, strdup("char error"));
+    return handle_word_token(lexer);
 }
 
 void token_free(struct token *tok)

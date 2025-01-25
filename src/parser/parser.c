@@ -8,12 +8,12 @@
 
 #include "../lexer/lexer.h"
 #include "../lexer/token.h"
-#include "ast.h"
 #include "../utils/variables_count.h"
+#include "ast.h"
 
-//int status_error = 0;
+// int status_error = 0;
 
-//GLOBAL
+// GLOBAL
 size_t variable_count = 0;
 
 struct ast *ast_create(enum ast_type type)
@@ -55,7 +55,8 @@ static int is_special_token(enum token_type type)
 {
     return type == TOKEN_IF || type == TOKEN_THEN || type == TOKEN_ELSE
         || type == TOKEN_ELIF || type == TOKEN_FI || type == TOKEN_DONE
-        || type == TOKEN_WHILE || type == TOKEN_DO || type == TOKEN_UNTIL || type == TOKEN_FOR || type == TOKEN_IN;
+        || type == TOKEN_WHILE || type == TOKEN_DO || type == TOKEN_UNTIL
+        || type == TOKEN_FOR || type == TOKEN_IN;
 }
 
 static void convert_token_to_word(struct token *tok)
@@ -285,7 +286,6 @@ struct ast *parse_command_list(struct lexer *lexer)
             break;
         }
 
-
         struct ast *command_node = parse_and_or(lexer);
         if (!command_node)
         {
@@ -343,23 +343,22 @@ struct ast *parse_while(struct lexer *lexer)
         ast_create(tok.type == TOKEN_WHILE ? AST_WHILE : AST_UNTIL);
     if (!ast_loop)
     {
-        return NULL; 
+        return NULL;
     }
     ast_loop->children = malloc(2 * sizeof(struct ast *));
     if (!ast_loop->children)
     {
         ast_free(ast_loop);
-        return NULL; 
+        return NULL;
     }
     ast_loop->children_count = 2;
-
 
     ast_loop->children[0] = parse_command_list(lexer);
     if (!ast_loop->children[0])
     {
         status_error = 2;
         ast_free(ast_loop);
-        return NULL; 
+        return NULL;
     }
 
     tok = lexer_peek(lexer);
@@ -367,7 +366,7 @@ struct ast *parse_while(struct lexer *lexer)
     {
         status_error = 2;
         ast_free(ast_loop);
-        return NULL; 
+        return NULL;
     }
     lexer_pop(lexer);
 
@@ -375,7 +374,7 @@ struct ast *parse_while(struct lexer *lexer)
     if (!ast_loop->children[1])
     {
         ast_free(ast_loop);
-        return NULL; 
+        return NULL;
     }
 
     tok = lexer_peek(lexer);
@@ -383,11 +382,11 @@ struct ast *parse_while(struct lexer *lexer)
     {
         status_error = 2;
         ast_free(ast_loop);
-        return NULL; 
+        return NULL;
     }
     lexer_pop(lexer);
 
-    return ast_loop; 
+    return ast_loop;
 }
 
 struct ast *parser_parse(struct lexer *lexer)
@@ -555,17 +554,21 @@ struct ast *parse_and_or(struct lexer *lexer)
     return left;
 }
 
-struct ast *parse_for(struct lexer *lexer) {
+struct ast *parse_for(struct lexer *lexer)
+{
     struct token tok = lexer_peek(lexer);
-    if (tok.type != TOKEN_FOR) {
-        fprintf(stderr, "Syntax error: expected 'for', got '%s'\n", tok.value ? tok.value : "NULL");
+    if (tok.type != TOKEN_FOR)
+    {
+        fprintf(stderr, "Syntax error: expected 'for', got '%s'\n",
+                tok.value ? tok.value : "NULL");
         return NULL;
     }
     lexer_pop(lexer);
 
     // Analyse du nom de la variable
     tok = lexer_peek(lexer);
-    if (tok.type != TOKEN_WORD) {
+    if (tok.type != TOKEN_WORD)
+    {
         fprintf(stderr, "Syntax error: expected variable name after 'for'\n");
         return NULL;
     }
@@ -574,7 +577,8 @@ struct ast *parse_for(struct lexer *lexer) {
 
     // Création du nœud AST pour la boucle "for"
     struct ast *for_node = ast_create(AST_FOR);
-    if (!for_node) {
+    if (!for_node)
+    {
         free(variable_name);
         return NULL;
     }
@@ -582,7 +586,8 @@ struct ast *parse_for(struct lexer *lexer) {
 
     // Création du nœud pour les valeurs de la boucle
     struct ast *values_node = ast_create(AST_LIST);
-    if (!values_node) {
+    if (!values_node)
+    {
         ast_free(for_node);
         free(variable_name);
         return NULL;
@@ -590,40 +595,52 @@ struct ast *parse_for(struct lexer *lexer) {
 
     // Analyse des valeurs après "in"
     tok = lexer_peek(lexer);
-    if (tok.type == TOKEN_IN) {
+    if (tok.type == TOKEN_IN)
+    {
         lexer_pop(lexer);
 
-        while (1) {
+        while (1)
+        {
             tok = lexer_peek(lexer);
 
-            if (tok.type == TOKEN_DO || tok.type == TOKEN_EOF) {
+            if (tok.type == TOKEN_DO || tok.type == TOKEN_EOF)
+            {
                 break;
             }
 
-            if (tok.type == TOKEN_WORD) {
+            if (tok.type == TOKEN_WORD)
+            {
                 struct ast *value_node = ast_create(AST_SIMPLE_COMMAND);
-                if (!value_node) {
+                if (!value_node)
+                {
                     fprintf(stderr, "Error allocating value node\n");
                     break;
                 }
                 value_node->data = strdup(tok.value);
 
-                values_node->children = realloc(values_node->children, sizeof(struct ast *) * (values_node->children_count + 1));
-                if (!values_node->children) {
+                values_node->children = realloc(
+                    values_node->children,
+                    sizeof(struct ast *) * (values_node->children_count + 1));
+                if (!values_node->children)
+                {
                     perror("realloc");
                     ast_free(value_node);
                     break;
                 }
-                values_node->children[values_node->children_count++] = value_node;
+                values_node->children[values_node->children_count++] =
+                    value_node;
                 lexer_pop(lexer);
-            } else {
+            }
+            else
+            {
                 lexer_pop(lexer);
             }
         }
     }
 
     tok = lexer_peek(lexer);
-    if (tok.type != TOKEN_DO) {
+    if (tok.type != TOKEN_DO)
+    {
         fprintf(stderr, "Syntax error: expected 'do'\n");
         ast_free(values_node);
         ast_free(for_node);
@@ -634,7 +651,8 @@ struct ast *parse_for(struct lexer *lexer) {
 
     // Analyse du corps de la boucle
     struct ast *body_node = parse_command_list(lexer);
-    if (!body_node) {
+    if (!body_node)
+    {
         fprintf(stderr, "Syntax error: invalid body in 'for'\n");
         ast_free(values_node);
         ast_free(for_node);
@@ -643,7 +661,8 @@ struct ast *parse_for(struct lexer *lexer) {
     }
 
     tok = lexer_peek(lexer);
-    if (tok.type != TOKEN_DONE) {
+    if (tok.type != TOKEN_DONE)
+    {
         fprintf(stderr, "Syntax error: expected 'done'\n");
         ast_free(values_node);
         ast_free(body_node);
@@ -654,7 +673,8 @@ struct ast *parse_for(struct lexer *lexer) {
     lexer_pop(lexer);
 
     for_node->children = malloc(2 * sizeof(struct ast *));
-    if (!for_node->children) {
+    if (!for_node->children)
+    {
         perror("malloc");
         ast_free(values_node);
         ast_free(body_node);
