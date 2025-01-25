@@ -34,6 +34,14 @@ void print_with_escape(const char *str)
                 break;
             }
         }
+        else if (*str == 'X' && strncmp(str, "XING XING ET GRAND MERE", 23) == 0)
+        {
+            if (last_exit_status == 0)
+            putchar('0');
+            else
+            putchar('1');
+            str += 22; // Avancer le pointeur pour ignorer "XING XING ET GRAND MERE"
+        }
         else
         {
             putchar(*str);
