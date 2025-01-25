@@ -6,93 +6,88 @@
 
 #include "../parser/parser.h"
 
-static int flag_e = 0;
-static int flag_n = 0;
-static int i = 1;
-static int is_option = 1;
-
-int builtin_echo(int argc, char **argv)
+void print_with_escape(const char *str)
 {
-    while (i < argc && argv[i][0] == '-' && argv[i][1] != '\0')
+    while (*str)
     {
-        for (size_t j = 1; argv[i][j]; j++)
+        if (*str == '\\')
         {
-            if (argv[i][j] == 'e')
+            str++;
+            switch (*str)
             {
-                flag_e = 0;
-            }
-            else if (argv[i][j] == 'E')
-            {
-                flag_e = 1;
-            }
-            else if (argv[i][j] == 'n')
-            {
-                flag_n = 1;
-            }
-            else
-            {
-                is_option =
-                    0; // Non reconnu, sortir et considérer comme argument
+            case 'n':
+                putchar('n');
+                break;
+            case 't':
+                putchar('t');
+                break;
+            case '\\':
+                putchar('\\');
+                break;
+            default:
+                putchar('\\');
+                putchar(*str);
                 break;
             }
         }
-        if (!is_option)
-            break; // Traiter comme argument normal
+        else
+        {
+            putchar(*str);
+        }
+        str++;
+    }
+}
+
+int builtin_echo(int argc, char **argv)
+{
+    int flag_n = 0;
+    int flag_e = 0; // -e enabled
+    int flag_E = 1; // -E enabled by default
+    int i = 1;
+
+    // Traitement des options
+    while (i < argc && argv[i][0] == '-' && argv[i][1] != '\0')
+    {
+        for (int j = 1; argv[i][j] != '\0'; j++)
+        {
+            if (argv[i][j] == 'n')
+                flag_n = 1;
+            else if (argv[i][j] == 'e')
+            {
+                flag_e = 1;
+                flag_E = 0;
+            }
+            else if (argv[i][j] == 'E')
+            {
+                flag_E = 1;
+                flag_e = 0;
+            }
+            else
+                goto end_options; // Option non reconnue, fin du traitement des options
+        }
         i++;
     }
 
+end_options:
     // Affichage des arguments restants
     for (int j = i; j < argc; j++)
     {
         if (j > i)
+            putchar(' ');
+        if (flag_e == 1 && flag_E == 0)
         {
-            printf(" ");
-        }
-        if (flag_e == 1)
-        {
-            for (char *p = argv[j]; *p; p++)
-            {
-                if (*p == '\\')
-                {
-                    p++;
-                    switch (*p)
-                    {
-                    case 'n':
-                        putchar('n');
-                        break;
-                    case 't':
-                        putchar('t');
-                        break;
-                    case '\\':
-                        putchar('\\');
-                        break;
-                    default:
-                        putchar(*p);
-                        break;
-                    }
-                }
-                else
-                {
-                    putchar(*p);
-                }
-            }
-        }
-        if (strcmp(argv[j], "XING XING ET GRAND MERE") == 0)
-        {
-            printf("%d", last_exit_status);
+            print_with_escape(argv[j]);
         }
         else
         {
-            // Affichage brut (mode -E ou par défaut)
-            printf("%s", argv[j]);
+            fputs(argv[j], stdout);
         }
     }
 
     // Ajouter un saut de ligne si -n n'est pas activé
     if (!flag_n)
-    {
-        printf("\n");
-    }
+        putchar('\n');
+
     fflush(stdout);
     return 0;
 }
