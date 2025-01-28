@@ -4,7 +4,7 @@
 
 int last_exit_status = 0;
 int loop_running = 1;
-
+/*
 void ast_eval_for(struct ast *node)
 {
     if (!node || node->type != AST_FOR || node->children_count < 2)
@@ -45,7 +45,7 @@ void ast_eval_for(struct ast *node)
         }
     }
 }
-
+*/
 void ast_eval_simple_command(struct ast *node)
 {
     struct ast_command_data *data = (struct ast_command_data *)node->data;
@@ -180,10 +180,10 @@ void ast_eval_until(struct ast *node)
 void ast_eval_if(struct ast *node)
 {
     struct ast_if_data *data = (struct ast_if_data *)node->data;
-    if (!data)
+    /*if (!data)
     {
         return;
-    }
+    }*/
     int condition_status = 1;
     if (data->condition && data->condition->children_count > 0)
     {
@@ -203,17 +203,17 @@ void ast_eval_if(struct ast *node)
     {
         ast_eval(data->else_branch);
     }
-    else if (!data->then_branch && !data->else_branch)
+    /*else if (!data->then_branch && !data->else_branch)
     {
-        fprintf(stderr, "[ERROR] AST_IF missing 'then' or 'else' branch.\n");
-    }
+        fprintf(stderr, "else or then missing\n");
+    }*/
 }
 
 void ast_eval_negation(struct ast *node)
 {
     if (node->children_count != 1 || !node->children[0])
     {
-        fprintf(stderr, "[ERROR] Invalid negation node.\n");
+        fprintf(stderr, "pipeline incorrect\n");
         last_exit_status = 1;
         return;
     }
@@ -239,10 +239,10 @@ void ast_eval_and_or(struct ast *node)
 
 void ast_eval(struct ast *node)
 {
-    if (!node)
+    /*if (!node)
     {
         return;
-    }
+    }*/
     switch (node->type)
     {
     case AST_SIMPLE_COMMAND:
@@ -272,9 +272,9 @@ void ast_eval(struct ast *node)
     case AST_AND_OR:
         ast_eval_and_or(node);
         break;
-    case AST_FOR:
+    /*case AST_FOR:
         ast_eval_for(node);
-        break;
+        break;*/
     default:
         fprintf(stderr, "le type de noeud n'est pas correct %d\n", node->type);
         break;

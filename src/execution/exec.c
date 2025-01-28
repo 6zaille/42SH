@@ -38,11 +38,11 @@ static void save_fd(int fd)
 {
     struct saved_fd *new_saved_fds =
         realloc(saved_fds, (saved_fd_count + 1) * sizeof(struct saved_fd));
-    if (!new_saved_fds)
+    /*if (!new_saved_fds)
     {
         perror("realloc");
         exit(EXIT_FAILURE);
-    }
+    }*/
     saved_fds = new_saved_fds;
     saved_fds[saved_fd_count].original_fd = fd;
     saved_fds[saved_fd_count].saved_fd = dup(fd);
@@ -75,13 +75,13 @@ static void apply_redirection(const char *filename, int fd, int flags, int mode)
     int new_fd = open(filename, flags, mode);
     if (new_fd == -1)
     {
-        perror("open");
+        //perror("open");
         exit(EXIT_FAILURE);
     }
     if (dup2(new_fd, fd) == -1)
     {
-        perror("dup2");
-        close(new_fd);
+        //perror("dup2");
+        //close(new_fd);
         exit(EXIT_FAILURE);
     }
     close(new_fd);
@@ -92,7 +92,7 @@ static void redirect_fd(int old_fd, int new_fd)
     save_fd(new_fd);
     if (dup2(old_fd, new_fd) == -1)
     {
-        perror("dup2");
+        //perror("dup2");
         exit(EXIT_FAILURE);
     }
 }
@@ -234,10 +234,10 @@ int execute_builtin(int argc, char **argv)
     {
         return builtin_exit(argc, argv);
     }
-    if (strcmp(argv[0], "break") == 0)
+    /*if (strcmp(argv[0], "break") == 0)
     {
         loop_running = 0; // Interrompt la boucle
         return 0;
-    }
+    }*/
     return -1;
 }

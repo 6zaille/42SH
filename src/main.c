@@ -62,7 +62,7 @@ const char *token_type_to_string(enum token_type type)
         return "UNKNOWN";
     }
 }*/
-
+/*
 void print_tokens(struct lexer *lexer)
 {
     struct token *token = NULL;
@@ -77,7 +77,7 @@ void print_tokens(struct lexer *lexer)
     // printf("Token: Type=%s, Value=%s\n", token_type_to_string(token->type),
     //        token->value);
 }
-
+*/ /*
 ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
 {
     if (!lineptr || !n || !stream)
@@ -126,7 +126,7 @@ ssize_t custom_getline(char **lineptr, size_t *n, FILE *stream)
 
     (*lineptr)[pos] = '\0';
     return (ssize_t)pos;
-}
+} */
 
 int handle_command_line_argument(int argc, char **argv, char **buffer)
 {
@@ -137,34 +137,34 @@ int handle_command_line_argument(int argc, char **argv, char **buffer)
         return 127;
     }
     *buffer = strdup(argv[2]);
-    if (!*buffer)
+    /*if (!*buffer)
     {
         perror("Memory allocation error");
         return 2;
-    }
+    }*/
     return 0;
 }
 
 int handle_file_input(const char *filename, char **buffer)
 {
     FILE *input_file = fopen(filename, "r");
-    if (!input_file)
+    /*if (!input_file)
     {
         perror("Error opening file");
         return 127;
-    }
+    }*/
 
     fseek(input_file, 0, SEEK_END);
     size_t buffer_size = ftell(input_file);
     fseek(input_file, 0, SEEK_SET);
 
     *buffer = malloc(buffer_size + 1);
-    if (!*buffer)
+    /*if (!*buffer)
     {
         perror("Memory allocation error");
         fclose(input_file);
         return 2;
-    }
+    }*/
 
     size_t read_size = fread(*buffer, 1, buffer_size, input_file);
     if (read_size != buffer_size)
@@ -213,12 +213,12 @@ int handle_stdin_mode(void)
 
     size_t buffer_size = 1024;
     char *buffer = malloc(buffer_size);
-    if (!buffer)
+    /*if (!buffer)
     {
         perror("malloc");
         free(accumulated_input);
         return 1;
-    }
+    }*/
 
     while (1)
     {
@@ -231,20 +231,20 @@ int handle_stdin_mode(void)
             return 1;
         }
 
-        if (bytes_read == 0) // EOF
+        if (bytes_read == 0)
             break;
 
-        buffer[bytes_read] = '\0'; // Null-terminate the buffer
+        buffer[bytes_read] = '\0';
 
         size_t new_length = strlen(accumulated_input) + bytes_read + 1;
         char *new_accumulated = realloc(accumulated_input, new_length);
-        if (!new_accumulated)
+        /*if (!new_accumulated)
         {
             perror("realloc");
             free(accumulated_input);
             free(buffer);
             return 1;
-        }
+        }*/
         accumulated_input = new_accumulated;
         strcat(accumulated_input, buffer);
 
@@ -331,13 +331,15 @@ int process_tokens(struct lexer *lexer)
         struct ast *ast = parser_parse(lexer);
         if (!ast)
         {
-            fprintf(stderr, "ast pas créé\n");
+            
+            if (status_error != 0)
+            {
+                fprintf(stderr, "ast pas créé\n");
+                return status_error;
+            }
             break;
         }
-        if (status_error != 0)
-        {
-            return status_error;
-        }
+        
         ast_eval(ast);
         ast_free(ast);
     }
@@ -356,15 +358,15 @@ int main(int argc, char **argv)
     {
         process_command_line_argument(argc, argv, &buffer, &result);
     }
-    else if (argc > 1)
+    else
     {
         process_file_input(argc, argv, &buffer, &result);
     }
-    else
+    /*else
     {
         fprintf(stderr, "Error: No input provided\n");
         return 127;
-    }
+    }*/
 
     if (result != 0)
     {
@@ -372,12 +374,12 @@ int main(int argc, char **argv)
     }
 
     struct lexer *lexer = lexer_init(buffer);
-    if (!lexer)
+    /*if (!lexer)
     {
-        fprintf(stderr, "Failed to initialize lexer\n");
+        fprintf(stderr, "lexer not initialized\n");
         free(buffer);
         return 2;
-    }
+    }*/
 
     int check = process_tokens(lexer);
     if (check != 0)

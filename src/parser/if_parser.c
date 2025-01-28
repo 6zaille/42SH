@@ -15,16 +15,16 @@ static struct ast *ast_create_if(struct ast *condition, struct ast *then_branch,
                                  struct ast *else_branch)
 {
     struct ast *node = ast_create(AST_IF);
-    if (!node)
+    /*if (!node)
     {
         return NULL;
-    }
+    }*/
     struct ast_if_data *data = malloc(sizeof(*data));
-    if (!data)
+    /*if (!data)
     {
         free(node);
         return NULL;
-    }
+    }*/
     data->condition = condition;
     data->then_branch = then_branch;
     data->else_branch = else_branch;
@@ -36,15 +36,21 @@ static struct ast *ast_create_if(struct ast *condition, struct ast *then_branch,
 static struct ast *parse_if_condition(struct lexer *lexer)
 {
     struct ast *condition = ast_create(AST_LIST);
-    if (!condition)
-        return NULL;
+    /*if (!condition)
+        return NULL;*/
 
     condition->children = NULL;
     condition->children_count = 0;
-
+    struct token tok = lexer_peek(lexer);
+    if (tok.type == TOKEN_SEMICOLON)
+    {
+        status_error = 2;
+        ast_free(condition);
+        return NULL;
+    }
     while (1)
     {
-        struct token tok = lexer_peek(lexer);
+        tok = lexer_peek(lexer);
         if (tok.type == TOKEN_THEN)
         {
             lexer_pop(lexer);
@@ -74,25 +80,25 @@ static struct ast *parse_if_condition(struct lexer *lexer)
         if (tok.type == TOKEN_EOF || tok.type == TOKEN_FI)
         {
             ast_free(condition);
+            status_error = 2;
             return NULL;
         }
 
         struct ast *cmd = parse_command_list(lexer);
-        if (!cmd)
+        /*if (!cmd)
         {
             ast_free(condition);
             return NULL;
-        }
-
+        }*/
         condition->children =
             realloc(condition->children,
                     sizeof(struct ast *) * (condition->children_count + 1));
-        if (!condition->children)
+        /*if (!condition->children)
         {
             perror("realloc");
             ast_free(condition);
             return NULL;
-        }
+        }*/
         condition->children[condition->children_count++] = cmd;
 
         tok = lexer_peek(lexer);
@@ -114,15 +120,21 @@ static struct ast *parse_if_condition(struct lexer *lexer)
 static struct ast *parse_then(struct lexer *lexer)
 {
     struct ast *condition = ast_create(AST_LIST);
-    if (!condition)
-        return NULL;
+    /*if (!condition)
+        return NULL;*/
 
     condition->children = NULL;
     condition->children_count = 0;
-
+    struct token tok = lexer_peek(lexer);
+    if (tok.type == TOKEN_SEMICOLON)
+    {
+        status_error = 2;
+        ast_free(condition);
+        return NULL;
+    }
     while (1)
     {
-        struct token tok = lexer_peek(lexer);
+        tok = lexer_peek(lexer);
         if (tok.type == TOKEN_ELSE || tok.type == TOKEN_FI
             || tok.type == TOKEN_ELIF)
         {
@@ -136,22 +148,22 @@ static struct ast *parse_then(struct lexer *lexer)
         }
 
         struct ast *cmd = parse_command_list(lexer);
-        if (!cmd)
+        /*if (!cmd)
         {
             fprintf(stderr, "commande incorrect\n");
             ast_free(condition);
             return NULL;
-        }
+        }*/
 
         condition->children =
             realloc(condition->children,
                     sizeof(struct ast *) * (condition->children_count + 1));
-        if (!condition->children)
+        /*if (!condition->children)
         {
             perror("realloc");
             ast_free(condition);
             return NULL;
-        }
+        }*/
         condition->children[condition->children_count++] = cmd;
 
         tok = lexer_peek(lexer);
@@ -171,15 +183,21 @@ static struct ast *parse_then(struct lexer *lexer)
 static struct ast *parse_else(struct lexer *lexer)
 {
     struct ast *condition = ast_create(AST_LIST);
-    if (!condition)
-        return NULL;
+    /*if (!condition)
+        return NULL;*/
 
     condition->children = NULL;
     condition->children_count = 0;
-
+    struct token tok = lexer_peek(lexer);
+    if (tok.type == TOKEN_SEMICOLON)
+    {
+        status_error = 2;
+        ast_free(condition);
+        return NULL;
+    }
     while (1)
     {
-        struct token tok = lexer_peek(lexer);
+        tok = lexer_peek(lexer);
         if (tok.type == TOKEN_FI)
         {
             break;
@@ -192,23 +210,23 @@ static struct ast *parse_else(struct lexer *lexer)
         }
 
         struct ast *cmd = parse_command_list(lexer);
-        if (!cmd)
+        /*if (!cmd)
         {
             status_error = 2;
             fprintf(stderr, "commande invalide dans parse_else\n");
             ast_free(condition);
             return NULL;
-        }
+        }*/
 
         condition->children =
             realloc(condition->children,
                     sizeof(struct ast *) * (condition->children_count + 1));
-        if (!condition->children)
+        /*if (!condition->children)
         {
             perror("realloc");
             ast_free(condition);
             return NULL;
-        }
+        }*/
         condition->children[condition->children_count++] = cmd;
 
         tok = lexer_peek(lexer);
@@ -228,13 +246,13 @@ static struct ast *parse_else(struct lexer *lexer)
 struct ast *parse_if_statement(struct lexer *lexer)
 {
     struct token tok = lexer_peek(lexer);
-    if (tok.type != TOKEN_IF)
+    /*if (tok.type != TOKEN_IF)
     {
         status_error = 2;
         fprintf(stderr, "Syntax error: expected 'if', got '%s'\n",
                 tok.value ? tok.value : "NULL");
         return NULL;
-    }
+    }*/
     lexer_pop(lexer);
 
     struct ast *condition = parse_if_condition(lexer);
@@ -280,14 +298,14 @@ struct ast *parse_if_statement(struct lexer *lexer)
 
             struct ast *elif_node =
                 ast_create_if(elif_condition, elif_then, NULL);
-            if (!elif_node)
+            /*if (!elif_node)
             {
                 ast_free(condition);
                 ast_free(then_branch);
                 ast_free(elif_condition);
                 ast_free(elif_then);
                 return NULL;
-            }
+            }*/
 
             if (!else_branch)
             {
@@ -322,6 +340,7 @@ struct ast *parse_if_statement(struct lexer *lexer)
             ast_free(condition);
             ast_free(then_branch);
             ast_free(else_branch);
+            status_error = 2;
             return NULL;
         }
 
@@ -351,6 +370,7 @@ struct ast *parse_if_statement(struct lexer *lexer)
         ast_free(condition);
         ast_free(then_branch);
         ast_free(else_branch);
+        status_error = 2;
         return NULL;
     }
     lexer_pop(lexer);

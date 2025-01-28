@@ -19,10 +19,10 @@ size_t variable_count = 0;
 struct ast *ast_create(enum ast_type type)
 {
     struct ast *node = malloc(sizeof(*node));
-    if (!node)
+    /*if (!node)
     {
         return NULL;
-    }
+    }*/
     node->type = type;
     node->children_count = 0;
     node->children = NULL;
@@ -33,8 +33,8 @@ struct ast *ast_create(enum ast_type type)
 static void *safe_realloc(void *ptr, size_t new_size)
 {
     void *new_ptr = realloc(ptr, new_size);
-    if (!new_ptr)
-        free(ptr);
+    /*if (!new_ptr)
+        free(ptr);*/
     return new_ptr;
 }
 
@@ -44,8 +44,8 @@ static char **append_arg(char **args, const char *arg)
     while (args && args[count])
         count++;
     char **new_args = safe_realloc(args, (count + 2) * sizeof(char *));
-    if (!new_args)
-        return NULL;
+    /*if (!new_args)
+        return NULL;*/
     new_args[count] = strdup(arg);
     new_args[count + 1] = NULL;
     return new_args;
@@ -66,7 +66,7 @@ static void convert_token_to_word(struct token *tok)
         tok->type = TOKEN_WORD;
     }
 }
-
+/*
 static struct redirection *parse_redirection(struct lexer *lexer)
 {
     struct token tok = lexer_peek(lexer);
@@ -88,24 +88,24 @@ static struct redirection *parse_redirection(struct lexer *lexer)
     redir->type = (tok.type == TOKEN_REDIRECT_IN) ? REDIR_IN : REDIR_OUT;
     redir->filename = strdup(filename.value);
     return redir;
-}
+}*/
 
 static struct ast *create_assignment_node(const char *value)
 {
     struct ast *assignment_node = ast_create(AST_SIMPLE_COMMAND);
-    if (!assignment_node)
+    /*if (!assignment_node)
     {
         printf("Failed to create assignment node\n");
         return NULL;
-    }
+    }*/
 
     struct ast_command_data *assignment_data = malloc(sizeof(*assignment_data));
-    if (!assignment_data)
+    /*if (!assignment_data)
     {
         printf("Failed to allocate memory for assignment_data\n");
         free(assignment_node);
         return NULL;
-    }
+    }*/
 
     assignment_data->args = append_arg(NULL, value);
     assignment_node->data = assignment_data;
@@ -125,12 +125,12 @@ static int add_assignment_node(struct ast *cmd_node, struct lexer *lexer)
     cmd_node->children =
         realloc(cmd_node->children,
                 sizeof(struct ast *) * (cmd_node->children_count + 1));
-    if (!cmd_node->children)
+    /*if (!cmd_node->children)
     {
         perror("realloc");
         ast_free(assignment_node);
         return -1;
-    }
+    }*/
 
     cmd_node->children[cmd_node->children_count++] = assignment_node;
     lexer_pop(lexer);
@@ -153,7 +153,11 @@ static int add_argument_or_redirection(struct ast_command_data *data,
         }
         data->args = append_arg(data->args, tok.value);
     }
-    else
+    if (lexer->pos == 0)
+    {
+        return 0;
+    }
+    /*else
     {
         struct redirection *redir = parse_redirection(lexer);
         if (redir)
@@ -166,11 +170,8 @@ static int add_argument_or_redirection(struct ast_command_data *data,
                 perror("realloc");
                 free(redir);
                 return -1;
-            }
-            data->redirections[data->redirection_count++] = *redir;
-            free(redir);
         }
-    }
+    }*/
     return 0;
 }
 
@@ -181,13 +182,12 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     {
         return NULL;
     }
-
     struct ast_command_data *data = malloc(sizeof(*data));
-    if (!data)
+    /*if (!data)
     {
         free(cmd_node);
         return NULL;
-    }
+    }*/
     data->args = NULL;
     data->redirections = NULL;
     data->redirection_count = 0;
@@ -231,26 +231,26 @@ static struct ast *parse_change(struct lexer *lexer)
     {
         lexer_pop(lexer);
         struct ast *child = parse_change(lexer);
-        if (!child)
+        /*if (!child)
         {
             fprintf(stderr, "Failed to parse negation child\n");
             return NULL;
-        }
+        }*/
 
         struct ast *negation_node = ast_create(AST_NEGATION);
-        if (!negation_node)
+        /*if (!negation_node)
         {
             ast_free(child);
             return NULL;
-        }
+        }*/
 
         negation_node->children = malloc(sizeof(struct ast *));
-        if (!negation_node->children)
+        /*if (!negation_node->children)
         {
             ast_free(negation_node);
             ast_free(child);
             return NULL;
-        }
+        }*/
 
         negation_node->children[0] = child;
         negation_node->children_count = 1;
@@ -271,8 +271,8 @@ static int is_end_of_block(enum token_type type)
 struct ast *parse_command_list(struct lexer *lexer)
 {
     struct ast *list_node = ast_create(AST_LIST);
-    if (!list_node)
-        return NULL;
+    /*if (!list_node)
+        return NULL;*/
 
     struct ast **commands = NULL;
     size_t count = 0;
@@ -287,11 +287,11 @@ struct ast *parse_command_list(struct lexer *lexer)
         }
 
         struct ast *command_node = parse_and_or(lexer);
-        if (!command_node)
+        /*if (!command_node)
         {
             ast_free(list_node);
             return NULL;
-        }
+        }*/
 
         commands = realloc(commands, sizeof(struct ast *) * (count + 1));
         if (!commands)

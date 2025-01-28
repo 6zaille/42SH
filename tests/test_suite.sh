@@ -10,8 +10,17 @@ FAILED_TESTS=0
 #OUTPUT_FILE=${OUTPUT_FILE:-"./out"}
 
 if [ ! -f "$BIN_PATH" ]; then
-    printf "chef il manque le binary 42sh %s\n" "$BIN_PATH"
-    exit 1
+    BIN_PATH="./src/42sh"
+    #printf "chef il manque le binary 42sh %s\n" "$BIN_PATH"
+    #exit 1
+fi
+
+if [ "$COVERAGE" = "yes" ]; then
+    printf "COVERAGE mode\n"
+    COVERAGE_ENABLED=1
+else
+    printf "REGULAR mode\n"
+    COVERAGE_ENABLED=0
 fi
 
 FAILED_TEST_NAMES=""
@@ -45,6 +54,70 @@ run_test() {
         printf "Test %d:  %b%s%b\n" "$TOTAL_TESTS" "$COLOR" "$STATUS_MSG" "$RESET"
     fi
 }
+
+run_test "ERROR: Not enough args" \
+    "$BIN_PATH -c > /dev/null" 127 \
+    'true'
+
+run_test "Execution with file as argument" \
+    "$BIN_PATH tests/test.sh > /dev/null" 0 \
+    'true'
+
+run_test "Execution with file as stdin" \
+    "$BIN_PATH < tests/test.sh > /dev/null" 0 \
+    'true'
+
+run_test "Echo: Echo with -e flag (coverage strat)" \
+    "$BIN_PATH -c 'echo -e Hello\n\t\\\World'" 0 \
+    'echo "$OUTPUT" | grep -q "Hello" && echo "$OUTPUT" | grep -q "World"'
+
+run_test "IF inside if" \
+    "$BIN_PATH -c 'if echo toto ;if false; then echo ok; fi ; then echo ok; fi'" 1 \
+    'true'
+
+run_test "IF inside if" \
+    "$BIN_PATH -c 'if; fi'" 2 \
+    'true'
+
+run_test "IF inside if" \
+    "$BIN_PATH -c 'if ls; else echo ok ; fi'" 2 \
+    'true'
+
+run_test "IF inside if" \
+    "$BIN_PATH -c 'if ls; else ; fi ;'" 2 \
+    'true'
+
+run_test "IF inside if" \
+    "$BIN_PATH -c 'if ls; else'" 2 \
+    'true'
+
+run_test "IF inside if" \
+    "$BIN_PATH -c 'if ls gsrg; then echo tata; else echo ko'" 2 \
+    'true'
+
+run_test "IF inside if" \
+    "$BIN_PATH -c 'if ; then echo tata; else echo ko; fi'" 2 \
+    'true'
+
+run_test "IF inside if" \
+    "$BIN_PATH -c 'if ls; then ; else echo ko; fi'" 2 \
+    'true'
+
+run_test "IF inside if" \
+    "$BIN_PATH -c 'if ls gsegs; then echo ok; else ; fi'" 2 \
+    'true'
+
+run_test "IF inside if" \
+    "$BIN_PATH -c 'if ls; then echo ok ; elif ; then echo ok; fi'" 2 \
+    'true'
+
+run_test "IF inside if" \
+    "$BIN_PATH -c 'if ls; then echo ok ; elif ls; then ; fi'" 2 \
+    'true'
+
+run_test "IF inside if" \
+    "$BIN_PATH -c 'if ls; then echo ok ; elif ls zgg; then echo ok; else; fi'" 2 \
+    'true'
 
 # Tests Echo Commands
 run_test "Echo: Simple echo" \
