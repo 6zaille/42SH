@@ -15,7 +15,6 @@
 // GLOBALS
 char *args[256];
 
-// Recherche une variable par son nom
 static struct variable *find_variable(const char *name)
 {
     for (size_t i = 0; i < variable_count; i++)
@@ -40,7 +39,6 @@ void init_shell(void)
     }
 }
 
-// Ajoute ou met à jour une variable
 void set_variable(const char *name, const char *value)
 {
     struct variable *var = find_variable(name);
@@ -62,7 +60,6 @@ void set_variable(const char *name, const char *value)
     }
 }
 
-// Récupère la valeur d'une variable ou des variables spéciales
 const char *get_variable(const char *name)
 {
     static char buffer[4096];
@@ -78,7 +75,7 @@ const char *get_variable(const char *name)
     }
     else if (strcmp(name, "#") == 0)
     {
-        snprintf(buffer, sizeof(buffer), "%zu", args_count);
+        snprintf(buffer, sizeof(buffer), "%d", args_count);
         return buffer;
     }
     else if (strcmp(name, "@") == 0 || strcmp(name, "*") == 0)
@@ -88,7 +85,7 @@ const char *get_variable(const char *name)
             return NULL;
         }
         size_t pos = 0;
-        for (size_t i = 0; i < args_count; i++)
+        for (int i = 0; i < args_count; i++)
         {
             pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%s%c", args[i],
                             '\0');
@@ -118,8 +115,7 @@ const char *get_variable(const char *name)
     return var ? var->value : NULL;
 }
 
-// Substitue les variables dans une chaîne de caractères
-char *substitute_variables(const char *input)
+/*char *substitute_variables(const char *input)
 {
     char *result = malloc(4096);
     if (!result)
@@ -177,20 +173,18 @@ char *substitute_variables(const char *input)
     }
     result[result_pos] = '\0';
     return result;
-}
+}*/
 
-// Configure les arguments pour $@ et $*
-void set_args(size_t count, char **arguments)
+/*void set_args(size_t count, char **arguments)
 {
     args_count = count;
     for (size_t i = 0; i < count; i++)
     {
         args[i] = strdup(arguments[i]);
     }
-}
+}*/
 
-// Libère les variables
-void free_variables(void)
+/*void free_variables(void)
 {
     for (size_t i = 0; i < variable_count; i++)
     {
@@ -206,3 +200,4 @@ void free_variables(void)
     free(pwd);
     free(oldpwd);
 }
+*/

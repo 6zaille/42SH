@@ -222,7 +222,7 @@ static struct ast *parse_simple_command(struct lexer *lexer)
     return cmd_node;
 }
 
-static struct ast *parse_change(struct lexer *lexer)
+struct ast *parse_change(struct lexer *lexer)
 {
     // printf("Parsing change...\n");
     struct token tok = lexer_peek(lexer);
@@ -287,19 +287,19 @@ struct ast *parse_command_list(struct lexer *lexer)
         }
 
         struct ast *command_node = parse_and_or(lexer);
-        /*if (!command_node)
+        if (!command_node)
         {
             ast_free(list_node);
             return NULL;
-        }*/
+        }
 
         commands = realloc(commands, sizeof(struct ast *) * (count + 1));
-        if (!commands)
+        /*if (!commands)
         {
             ast_free(command_node);
             ast_free(list_node);
             return NULL;
-        }
+        }*/
 
         commands[count++] = command_node;
 
@@ -333,24 +333,24 @@ struct ast *parse_while(struct lexer *lexer)
 {
     struct token tok = lexer_peek(lexer);
 
-    if (tok.type != TOKEN_WHILE && tok.type != TOKEN_UNTIL)
+    /*if (tok.type != TOKEN_WHILE && tok.type != TOKEN_UNTIL)
     {
         return NULL;
-    }
+    }*/
     lexer_pop(lexer);
 
     struct ast *ast_loop =
         ast_create(tok.type == TOKEN_WHILE ? AST_WHILE : AST_UNTIL);
-    if (!ast_loop)
+    /*if (!ast_loop)
     {
         return NULL;
-    }
+    }*/
     ast_loop->children = malloc(2 * sizeof(struct ast *));
-    if (!ast_loop->children)
+    /*if (!ast_loop->children)
     {
         ast_free(ast_loop);
         return NULL;
-    }
+    }*/
     ast_loop->children_count = 2;
 
     ast_loop->children[0] = parse_command_list(lexer);
@@ -401,10 +401,10 @@ struct ast *parser_parse(struct lexer *lexer)
     {
         return parse_if_statement(lexer);
     }
-    else if (tok.type == TOKEN_FOR)
+    /*else if (tok.type == TOKEN_FOR)
     {
         return parse_for(lexer);
-    }
+    }*/
     else
     {
         return parse_command_list(lexer);
@@ -451,27 +451,27 @@ void ast_free(struct ast *node)
 struct ast *parse_pipeline(struct lexer *lexer)
 {
     struct ast *first_command = parse_simple_command(lexer);
-    if (!first_command)
-        return NULL;
+    /*if (!first_command)
+        return NULL;*/
 
     struct token tok = lexer_peek(lexer);
     if (tok.type != TOKEN_PIPE)
         return first_command;
 
     struct ast *pipeline_node = ast_create(AST_PIPELINE);
-    if (!pipeline_node)
+    /*if (!pipeline_node)
     {
         ast_free(first_command);
         return NULL;
-    }
+    }*/
 
     pipeline_node->children = malloc(sizeof(struct ast *));
-    if (!pipeline_node->children)
+    /*if (!pipeline_node->children)
     {
         ast_free(pipeline_node);
         ast_free(first_command);
         return NULL;
-    }
+    }*/
 
     pipeline_node->children[0] = first_command;
     pipeline_node->children_count = 1;
@@ -490,13 +490,13 @@ struct ast *parse_pipeline(struct lexer *lexer)
         struct ast **new_children =
             realloc(pipeline_node->children,
                     sizeof(struct ast *) * (pipeline_node->children_count + 1));
-        if (!new_children)
+        /*if (!new_children)
         {
             status_error = 2;
             ast_free(next_command);
             ast_free(pipeline_node);
             return NULL;
-        }
+        }*/
 
         pipeline_node->children = new_children;
         pipeline_node->children[pipeline_node->children_count++] = next_command;
@@ -506,10 +506,10 @@ struct ast *parse_pipeline(struct lexer *lexer)
 
     return pipeline_node;
 }
-
+/*
 struct ast *parse_and_or(struct lexer *lexer)
 {
-    struct ast *left = parse_change(lexer); // Appel à parse_change
+    struct ast *left = parse_change(lexer);
     if (!left)
         return NULL;
 
@@ -518,7 +518,7 @@ struct ast *parse_and_or(struct lexer *lexer)
     {
         lexer_pop(lexer);
         struct ast *right =
-            parse_change(lexer); // Appel à parse_change ici aussi
+            parse_change(lexer);
         if (!right)
         {
             ast_free(left);
@@ -552,8 +552,8 @@ struct ast *parse_and_or(struct lexer *lexer)
     }
 
     return left;
-}
-
+}*/
+/*
 struct ast *parse_for(struct lexer *lexer)
 {
     struct token tok = lexer_peek(lexer);
@@ -565,7 +565,6 @@ struct ast *parse_for(struct lexer *lexer)
     }
     lexer_pop(lexer);
 
-    // Analyse du nom de la variable
     tok = lexer_peek(lexer);
     if (tok.type != TOKEN_WORD)
     {
@@ -575,7 +574,6 @@ struct ast *parse_for(struct lexer *lexer)
     char *variable_name = strdup(tok.value);
     lexer_pop(lexer);
 
-    // Création du nœud AST pour la boucle "for"
     struct ast *for_node = ast_create(AST_FOR);
     if (!for_node)
     {
@@ -584,7 +582,9 @@ struct ast *parse_for(struct lexer *lexer)
     }
     for_node->data = variable_name;
 
-    // Création du nœud pour les valeurs de la boucle
+
+
+
     struct ast *values_node = ast_create(AST_LIST);
     if (!values_node)
     {
@@ -593,7 +593,7 @@ struct ast *parse_for(struct lexer *lexer)
         return NULL;
     }
 
-    // Analyse des valeurs après "in"
+
     tok = lexer_peek(lexer);
     if (tok.type == TOKEN_IN)
     {
@@ -688,3 +688,4 @@ struct ast *parse_for(struct lexer *lexer)
 
     return for_node;
 }
+*/

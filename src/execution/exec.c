@@ -16,12 +16,6 @@
 #    define O_CLOEXEC FD_CLOEXEC
 #endif /* O_CLOEXEC */
 
-struct saved_fd
-{
-    int original_fd;
-    int saved_fd;
-};
-extern int loop_running;
 static struct saved_fd *saved_fds = NULL;
 static size_t saved_fd_count = 0;
 
@@ -75,13 +69,13 @@ static void apply_redirection(const char *filename, int fd, int flags, int mode)
     int new_fd = open(filename, flags, mode);
     if (new_fd == -1)
     {
-        //perror("open");
+        // perror("open");
         exit(EXIT_FAILURE);
     }
     if (dup2(new_fd, fd) == -1)
     {
-        //perror("dup2");
-        //close(new_fd);
+        // perror("dup2");
+        // close(new_fd);
         exit(EXIT_FAILURE);
     }
     close(new_fd);
@@ -92,7 +86,7 @@ static void redirect_fd(int old_fd, int new_fd)
     save_fd(new_fd);
     if (dup2(old_fd, new_fd) == -1)
     {
-        //perror("dup2");
+        // perror("dup2");
         exit(EXIT_FAILURE);
     }
 }

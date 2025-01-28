@@ -11,7 +11,7 @@
 #include "parser/parser.h"
 #include "utils/utils.h"
 
-size_t args_count = 0;
+int args_count = 0;
 
 /*
 const char *token_type_to_string(enum token_type type)
@@ -145,7 +145,7 @@ int handle_command_line_argument(int argc, char **argv, char **buffer)
     return 0;
 }
 
-int handle_file_input(const char *filename, char **buffer)
+static int handle_file_input(const char *filename, char **buffer)
 {
     FILE *input_file = fopen(filename, "r");
     /*if (!input_file)
@@ -202,7 +202,7 @@ void init_variables(int argc, char **argv)
     }
 }
 
-int handle_stdin_mode(void)
+static int handle_stdin_mode(void)
 {
     char *accumulated_input = calloc(1, sizeof(char));
     if (!accumulated_input)
@@ -269,8 +269,8 @@ int handle_stdin_mode(void)
                 ast_eval(ast);
                 ast_free(ast);
 
-                //free(accumulated_input);
-                //accumulated_input = calloc(1, sizeof(char));
+                // free(accumulated_input);
+                // accumulated_input = calloc(1, sizeof(char));
                 /*if (!accumulated_input)
                 {
                     perror("calloc");
@@ -331,7 +331,6 @@ int process_tokens(struct lexer *lexer)
         struct ast *ast = parser_parse(lexer);
         if (!ast)
         {
-            
             if (status_error != 0)
             {
                 fprintf(stderr, "ast pas créé\n");
@@ -339,7 +338,7 @@ int process_tokens(struct lexer *lexer)
             }
             break;
         }
-        
+
         ast_eval(ast);
         ast_free(ast);
     }
@@ -358,15 +357,15 @@ int main(int argc, char **argv)
     {
         process_command_line_argument(argc, argv, &buffer, &result);
     }
-    else
+    else if (argc > 1 && strstr(argv[1], ".sh") != NULL)
     {
         process_file_input(argc, argv, &buffer, &result);
     }
-    /*else
+    else
     {
         fprintf(stderr, "Error: No input provided\n");
         return 127;
-    }*/
+    }
 
     if (result != 0)
     {
@@ -386,7 +385,7 @@ int main(int argc, char **argv)
     {
         return check;
     }
-    
+
     lexer_destroy(lexer);
     free(buffer);
     free(pwd);

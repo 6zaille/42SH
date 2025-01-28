@@ -26,8 +26,8 @@ struct ast *parse_if_statement(struct lexer *lexer);
 struct ast *parse_pipeline(struct lexer *lexer);
 struct ast *parse_command_list(struct lexer *lexer);
 struct ast *parse_and_or(struct lexer *lexer);
+struct ast *parse_change(struct lexer *lexer);
 struct ast *parse_while(struct lexer *lexer);
-struct ast *parse_for(struct lexer *lexer);
 void ast_free(struct ast *node);
 
 #endif /* !PARSER_H */

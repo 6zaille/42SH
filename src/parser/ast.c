@@ -2,7 +2,6 @@
 
 #include "parser.h"
 
-int last_exit_status = 0;
 int loop_running = 1;
 /*
 void ast_eval_for(struct ast *node)

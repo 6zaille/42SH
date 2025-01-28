@@ -119,6 +119,22 @@ run_test "IF inside if" \
     "$BIN_PATH -c 'if ls; then echo ok ; elif ls zgg; then echo ok; else; fi'" 2 \
     'true'
 
+run_test "While: error" \
+    "$BIN_PATH -c 'while false; echo Never; done'" 2 \
+    'true'
+
+run_test "While: error" \
+    "$BIN_PATH -c 'while false; do echo Never;'" 2 \
+    'true'
+
+run_test "While: error" \
+    "$BIN_PATH -c 'i=1 ; echo $i ; i=3 ; echo $i'" 0 \
+    'true'
+
+run_test "While: error" \
+    "$BIN_PATH -c 'i=3 a=2; echo $i $a $1 $$ $* $@ $? $# $RANDOM $UID $PWD $OLDPWD'" 0 \
+    'true'
+
 # Tests Echo Commands
 run_test "Echo: Simple echo" \
     "$BIN_PATH -c 'echo Hello World'" 0 \

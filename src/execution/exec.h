@@ -12,6 +12,14 @@ typedef struct
     int mode;
 } redirection_t;
 
+struct saved_fd
+{
+    int original_fd;
+    int saved_fd;
+};
+
+extern int loop_running;
+
 int execute_builtin(int argc, char **argv);
 int execute_command(int argc, char **argv);
 int execute_command_with_redirections(int argc, char **argv, struct ast *node);
