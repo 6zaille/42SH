@@ -12,6 +12,10 @@ for dir in src/execution src/lexer src/parser src/utils; do
     rm -rf $dir/.deps $dir/Makefile.in $dir/Makefile $dir/*.o $dir/*.a
 done
 
+# Supprimer tous les fichiers .gcda et .gcno de manière récursive
+echo "Suppression récursive des fichiers de couverture (.gcda et .gcno)"
+find . -type f \( -name "*.gcda" -o -name "*.gcno" \) -exec rm -f {} +
+
 rm -rf .vscode;
 rm config.status;
 rm -rf src/.deps;

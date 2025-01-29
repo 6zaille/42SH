@@ -205,21 +205,8 @@ void init_variables(int argc, char **argv)
 static int handle_stdin_mode(void)
 {
     char *accumulated_input = calloc(1, sizeof(char));
-    if (!accumulated_input)
-    {
-        perror("calloc");
-        return 1;
-    }
-
     size_t buffer_size = 1024;
     char *buffer = malloc(buffer_size);
-    /*if (!buffer)
-    {
-        perror("malloc");
-        free(accumulated_input);
-        return 1;
-    }*/
-
     while (1)
     {
         ssize_t bytes_read = read(STDIN_FILENO, buffer, buffer_size - 1);
@@ -238,13 +225,7 @@ static int handle_stdin_mode(void)
 
         size_t new_length = strlen(accumulated_input) + bytes_read + 1;
         char *new_accumulated = realloc(accumulated_input, new_length);
-        /*if (!new_accumulated)
-        {
-            perror("realloc");
-            free(accumulated_input);
-            free(buffer);
-            return 1;
-        }*/
+
         accumulated_input = new_accumulated;
         strcat(accumulated_input, buffer);
 
@@ -268,16 +249,6 @@ static int handle_stdin_mode(void)
             {
                 ast_eval(ast);
                 ast_free(ast);
-
-                // free(accumulated_input);
-                // accumulated_input = calloc(1, sizeof(char));
-                /*if (!accumulated_input)
-                {
-                    perror("calloc");
-                    lexer_destroy(lexer);
-                    free(buffer);
-                    return 1;
-                }*/
             }
             else
             {

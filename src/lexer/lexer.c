@@ -179,6 +179,30 @@ void expand_variable(struct lexer *lexer, char *buffer, size_t *buf_index)
     }
 }
 
+static void handle_quoted_string(struct lexer *lexer, char *buffer,
+                                 size_t *buf_index, char quote)
+{
+    lexer->pos++; // Skip opening quote
+    while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != quote)
+    {
+        if (lexer->input[lexer->pos] == '\\' && quote == '"'
+            && (lexer->input[lexer->pos + 1] == '$'
+                || lexer->input[lexer->pos + 1] == '"'))
+        {
+            lexer->pos++; // Skip the backslash
+        }
+        else if (lexer->input[lexer->pos] == '$' && quote == '"')
+        {
+            lexer->pos++;
+            expand_variable(lexer, buffer, buf_index);
+            continue;
+        }
+        buffer[(*buf_index)++] = lexer->input[lexer->pos++];
+    }
+    if (lexer->input[lexer->pos] == quote)
+        lexer->pos++; // Skip closing quote
+}
+
 static struct token *handle_word_token(struct lexer *lexer)
 {
     char *buffer = malloc(strlen(lexer->input) + 1);
@@ -196,36 +220,11 @@ static struct token *handle_word_token(struct lexer *lexer)
         }
         else if (lexer->input[lexer->pos] == '\'')
         {
-            lexer->pos++; // Skip opening single quote
-            while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '\''
-                   && !isspace(lexer->input[lexer->pos]))
-            {
-                buffer[buf_index++] = lexer->input[lexer->pos++];
-            }
-            if (lexer->input[lexer->pos] == '\'')
-                lexer->pos++; // Skip closing single quote
+            handle_quoted_string(lexer, buffer, &buf_index, '\'');
         }
         else if (lexer->input[lexer->pos] == '"')
         {
-            lexer->pos++; // Skip opening double quote
-            while (lexer->input[lexer->pos] && lexer->input[lexer->pos] != '"')
-            {
-                if (lexer->input[lexer->pos] == '\\'
-                    && (lexer->input[lexer->pos + 1] == '$'
-                        || lexer->input[lexer->pos + 1] == '"'))
-                {
-                    lexer->pos++;
-                }
-                else if (lexer->input[lexer->pos] == '$')
-                {
-                    lexer->pos++;
-                    expand_variable(lexer, buffer, &buf_index);
-                    continue;
-                }
-                buffer[buf_index++] = lexer->input[lexer->pos++];
-            }
-            if (lexer->input[lexer->pos] == '"')
-                lexer->pos++; // Skip closing double quote
+            handle_quoted_string(lexer, buffer, &buf_index, '"');
         }
         else if (lexer->input[lexer->pos] == '$')
         {
@@ -247,6 +246,7 @@ static struct token *handle_word_token(struct lexer *lexer)
     enum token_type type = check_keyword(buffer);
     return token_init(type, buffer);
 }
+
 static struct token *handle_and(struct lexer *lexer)
 {
     lexer->pos += 2;

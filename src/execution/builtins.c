@@ -51,29 +51,38 @@ void print_with_escape(const char *str)
     }
 }
 
-void handle_echo_options(int argc, char **argv, int *flag_n, int *flag_e,
-                         int *flag_E, int *i)
+struct echooptionparameters
 {
-    while (*i < argc && argv[*i][0] == '-' && argv[*i][1] != '\0')
+    int flag_n;
+    int flag_e;
+    int flag_E;
+    int i;
+};
+
+void handle_echo_options(int argc, char **argv,
+                         struct echooptionparameters *params)
+{
+    while (params->i < argc && argv[params->i][0] == '-'
+           && argv[params->i][1] != '\0')
     {
-        for (int j = 1; argv[*i][j] != '\0'; j++)
+        for (int j = 1; argv[params->i][j] != '\0'; j++)
         {
-            if (argv[*i][j] == 'n')
-                *flag_n = 1;
-            else if (argv[*i][j] == 'e')
+            if (argv[params->i][j] == 'n')
+                params->flag_n = 1;
+            else if (argv[params->i][j] == 'e')
             {
-                *flag_e = 1;
-                *flag_E = 0;
+                params->flag_e = 1;
+                params->flag_E = 0;
             }
-            else if (argv[*i][j] == 'E')
+            else if (argv[params->i][j] == 'E')
             {
-                *flag_E = 1;
-                *flag_e = 0;
+                params->flag_E = 1;
+                params->flag_e = 0;
             }
             else
                 return;
         }
-        (*i)++;
+        (params->i)++;
     }
 }
 
@@ -99,21 +108,18 @@ void print_echo_argument(const char *arg, int flag_e, int flag_E)
 
 int builtin_echo(int argc, char **argv)
 {
-    int flag_n = 0;
-    int flag_e = 0;
-    int flag_E = 1;
-    int i = 1;
+    struct echooptionparameters params = { 0, 0, 1, 1 };
 
-    handle_echo_options(argc, argv, &flag_n, &flag_e, &flag_E, &i);
+    handle_echo_options(argc, argv, &params);
 
-    for (int j = i; j < argc; j++)
+    for (int j = params.i; j < argc; j++)
     {
-        if (j > i)
+        if (j > params.i)
             putchar(' ');
-        print_echo_argument(argv[j], flag_e, flag_E);
+        print_echo_argument(argv[j], params.flag_e, params.flag_E);
     }
 
-    if (!flag_n)
+    if (!params.flag_n)
         putchar('\n');
 
     fflush(stdout);
