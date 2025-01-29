@@ -10,9 +10,9 @@ FAILED_TESTS=0
 #OUTPUT_FILE=${OUTPUT_FILE:-"./out"}
 
 if [ ! -f "$BIN_PATH" ]; then
-    BIN_PATH="./src/42sh"
-    #printf "chef il manque le binary 42sh %s\n" "$BIN_PATH"
-    #exit 1
+    #BIN_PATH="./src/42sh"
+    printf "chef il manque le binary 42sh %s\n" "$BIN_PATH"
+    exit 1
 fi
 
 if [ "$COVERAGE" = "yes" ]; then
