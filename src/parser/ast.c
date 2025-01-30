@@ -1,5 +1,8 @@
 #include "ast.h"
 
+#include <fcntl.h>
+
+#include "../execution/exec.h"
 #include "parser.h"
 
 int loop_running = 1;
@@ -61,6 +64,36 @@ void ast_eval_simple_command(struct ast *node)
         last_exit_status = 0;
         return;
     }
+
+    for (size_t i = 0; i < data->redirection_count; i++)
+    {
+        struct redirection *redir = &data->redirections[i];
+        int flags = 0;
+
+        switch (redir->type)
+        {
+        case REDIR_OUT:
+            flags = O_WRONLY | O_CREAT | O_TRUNC;
+            break;
+        case REDIR_APPEND:
+            flags = O_WRONLY | O_CREAT | O_APPEND;
+            break;
+        case REDIR_IN:
+            flags = O_RDONLY;
+            break;
+        case REDIR_RW:
+            flags = O_RDWR | O_CREAT;
+            break;
+        default:
+            continue;
+        }
+
+        apply_redirection(redir->filename,
+                          redir->type == REDIR_IN ? STDIN_FILENO
+                                                  : STDOUT_FILENO,
+                          flags, 0644);
+    }
+
     int argc = 0;
     while (data->args[argc] != NULL)
     {

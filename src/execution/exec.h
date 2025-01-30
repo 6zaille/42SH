@@ -20,6 +20,7 @@ struct saved_fd
 
 extern int loop_running;
 
+void apply_redirection(const char *filename, int fd, int flags, int mode);
 int execute_builtin(int argc, char **argv);
 int execute_command(int argc, char **argv);
 int execute_command_with_redirections(int argc, char **argv, struct ast *node);

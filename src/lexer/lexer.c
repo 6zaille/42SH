@@ -10,7 +10,6 @@
 #include "../utils/variables.h"
 #include "token.h"
 
-// GLOBAL
 struct variable variables[MAX_VARIABLES];
 
 static void skip_whitespace(struct lexer *lexer)
@@ -310,6 +309,21 @@ static struct token *handle_special_char(struct lexer *lexer, char c)
     {
         lexer->pos++;
         return token_init(TOKEN_NEGATION, strdup("!"));
+    }
+    if (c == '>')
+    {
+        if (lexer->input[lexer->pos + 1] == '>')
+        {
+            lexer->pos += 2;
+            return token_init(TOKEN_REDIRECT_APPEND, strdup(">>"));
+        }
+        lexer->pos++;
+        return token_init(TOKEN_REDIRECT_OUT, strdup(">"));
+    }
+    if (c == '<')
+    {
+        lexer->pos++;
+        return token_init(TOKEN_REDIRECT_IN, strdup("<"));
     }
     return NULL;
 }

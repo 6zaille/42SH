@@ -22,11 +22,9 @@ static size_t saved_fd_count = 0;
 // GLOBALS
 char *pwd = NULL;
 
-static void save_fd(int fd);
+/*static void save_fd(int fd);
 static void restore_fds(void);
-static void apply_redirection(const char *filename, int fd, int flags,
-                              int mode);
-static void redirect_fd(int old_fd, int new_fd);
+static void redirect_fd(int old_fd, int new_fd);*/
 
 static void save_fd(int fd)
 {
@@ -63,7 +61,7 @@ static void restore_fds(void)
     saved_fd_count = 0;
 }
 
-static void apply_redirection(const char *filename, int fd, int flags, int mode)
+void apply_redirection(const char *filename, int fd, int flags, int mode)
 {
     save_fd(fd);
     int new_fd = open(filename, flags, mode);

@@ -153,25 +153,40 @@ static int add_argument_or_redirection(struct ast_command_data *data,
         }
         data->args = append_arg(data->args, tok.value);
     }
+    else if (tok.type >= TOKEN_REDIRECT_IN && tok.type <= TOKEN_REDIRECT_RW)
+    {
+        lexer_pop(lexer);
+        struct redirection redir;
+        redir.type = (tok.type == TOKEN_REDIRECT_OUT) ? REDIR_OUT
+            : (tok.type == TOKEN_REDIRECT_APPEND)     ? REDIR_APPEND
+            : (tok.type == TOKEN_REDIRECT_IN)         ? REDIR_IN
+                                                      : REDIR_RW;
+
+        struct token filename = lexer_peek(lexer);
+        if (filename.type != TOKEN_WORD)
+        {
+            fprintf(stderr, "filename attendu\n");
+            return -1;
+        }
+        redir.filename = strdup(filename.value);
+
+        data->redirections = realloc(data->redirections,
+                                     sizeof(*data->redirections)
+                                         * (data->redirection_count + 1));
+        if (!data->redirections)
+        {
+            perror("realloc");
+            free(redir.filename);
+            return -1;
+        }
+
+        data->redirections[data->redirection_count++] = redir;
+    }
+
     if (lexer->pos == 0)
     {
         return 0;
     }
-    /*else
-    {
-        struct redirection *redir = parse_redirection(lexer);
-        if (redir)
-        {
-            data->redirections = realloc(data->redirections,
-                                         sizeof(*data->redirections)
-                                             * (data->redirection_count + 1));
-            if (!data->redirections)
-            {
-                perror("realloc");
-                free(redir);
-                return -1;
-        }
-    }*/
     return 0;
 }
 
@@ -431,6 +446,11 @@ void ast_free(struct ast *node)
                 free(data->args[i]);
             }
             free(data->args);
+            for (size_t i = 0; i < data->redirection_count; i++)
+            {
+                free(data->redirections[i].filename);
+            }
+            free(data->redirections);
             free(data);
         }
     }
@@ -444,6 +464,10 @@ void ast_free(struct ast *node)
             ast_free(data->else_branch);
             free(data);
         }
+    }
+    else if (node->type == AST_AND_OR)
+    {
+        free(node->data);
     }
     free(node);
 }
